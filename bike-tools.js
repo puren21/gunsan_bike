@@ -55,10 +55,10 @@ window.installBikeTools = function(api) {
   });
   function movable(element,handle,key){
     const saved=(()=>{try{return JSON.parse(storage.getItem(key)||'null');}catch(e){return null;}})();
-    if(saved){element.style.left=Math.max(0,Math.min(saved.left,innerWidth-100))+'px';element.style.top=Math.max(0,Math.min(saved.top,innerHeight-60))+'px';element.style.right='auto';element.style.bottom='auto';if(saved.width)element.style.width=Math.min(saved.width,innerWidth-16)+'px';if(saved.height)element.style.height=Math.min(saved.height,innerHeight-16)+'px';}
+    if(saved){element.style.left=Math.max(0,Math.min(saved.left,innerWidth-100))+'px';element.style.top=Math.max(0,Math.min(saved.top,innerHeight-60))+'px';element.style.right='auto';element.style.bottom='auto';if(saved.width)element.style.width=Math.min(saved.width,innerWidth-16)+'px';if(saved.height)element.style.height=Math.min(saved.height,innerHeight-16)+'px';if(element!==dock)element.style.maxHeight=Math.max(190,innerHeight-parseFloat(element.style.top)-8)+'px';}
     const persist=()=>{const r=element.getBoundingClientRect();if(r.width&&r.height)storage.setItem(key,JSON.stringify({left:r.left,top:r.top,width:r.width,height:element===dock?undefined:r.height}));};
     handle.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button,input,select'))return;e.preventDefault();const r=element.getBoundingClientRect(),x=e.clientX,y=e.clientY;handle.setPointerCapture(e.pointerId);handle.style.touchAction='none';
-      const move=v=>{element.style.left=Math.max(0,Math.min(innerWidth-80,r.left+v.clientX-x))+'px';element.style.top=Math.max(0,Math.min(innerHeight-45,r.top+v.clientY-y))+'px';element.style.right='auto';element.style.bottom='auto';};
+      const move=v=>{element.style.left=Math.max(0,Math.min(innerWidth-80,r.left+v.clientX-x))+'px';element.style.top=Math.max(0,Math.min(innerHeight-45,r.top+v.clientY-y))+'px';element.style.right='auto';element.style.bottom='auto';if(element!==dock)element.style.maxHeight=Math.max(190,innerHeight-parseFloat(element.style.top)-8)+'px';};
       const up=()=>{handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',up);handle.removeEventListener('pointercancel',up);persist();};handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',up);handle.addEventListener('pointercancel',up);
     });
     if(element!==dock)new ResizeObserver(()=>{if(!element.hidden&&element.style.left)persist();}).observe(element);
@@ -140,6 +140,7 @@ window.installBikeTools = function(api) {
   function updateUI() {
     $('bikeTableBtn').disabled=!ready||busy;
     tablePanel.querySelectorAll('tr[data-id]').forEach(row=>row.setAttribute('aria-selected',String(selected.has(row.dataset.id))));
+    if(!tablePanel.hidden)$('bikeTableCount').textContent=tablePanel.querySelectorAll('tbody tr').length+' / '+dataset.features.length+'개 · 선택 '+selected.size+'개';
     $('bikeSelectionState').textContent=selected.size?selected.size+'개 라인 선택'+(active()?' · '+nameOf(active()):''):'선택한 라인 없음';
     for(const tool of ['select','draw','vertex','split','multi','merge'])$('bikeTool-'+tool).setAttribute('aria-pressed',String(mode===tool));
     $('bikeTool-vertex').disabled=!activeId;$('bikeTool-split').disabled=!selected.size;$('bikeTool-merge').disabled=busy;$('bikeTool-delete').disabled=!selected.size;
