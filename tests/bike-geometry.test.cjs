@@ -9,3 +9,7 @@ test('disconnected lines retain separate parts',()=>assert.equal(G.merge([[[126,
 test('branching junction is not arbitrarily joined',()=>assert.equal(G.merge([[[126,36],[126.01,36]],[[126.01,36],[126.02,36]],[[126.01,36],[126.01,36.01]]]).length,3));
 test('nearest split location interpolates on line',()=>{const n=G.nearest([[0,0],[10,0]],[4,3]);assert.equal(n.distance,3);assert.deepEqual(n.coordinate,[4,0]);});
 test('geometry operations do not mutate their inputs',()=>{const a=[[[126,36],[126.01,36]],[[126.01,36],[126.02,36]]],before=G.copy(a);G.merge(a);G.split(a[0],[[126.005,35.9],[126.005,36.1]]);assert.deepEqual(a,before);});
+test('box selection includes crossing segment with both vertices outside',()=>assert(G.intersectsBox([[-10,5],[20,5]],{left:0,right:10,top:0,bottom:10})));
+test('box selection includes a line fully inside',()=>assert(G.intersectsBox([[2,2],[8,8]],{left:0,right:10,top:0,bottom:10})));
+test('box selection rejects line outside rectangle',()=>assert(!G.intersectsBox([[-2,-2],[12,-2]],{left:0,right:10,top:0,bottom:10})));
+test('box selection includes boundary touch without bounding-box false positive',()=>{assert(G.intersectsBox([[-5,0],[15,0]],{left:0,right:10,top:0,bottom:10}));assert(!G.intersectsBox([[-5,1],[1,-5]],{left:0,right:10,top:0,bottom:10}));});

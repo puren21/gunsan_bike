@@ -55,6 +55,20 @@
     }
     return result;
   }
-  const api={copy,paths,distance,clean,valid,nearest,split,merge};
+  function intersectsBox(path,box) {
+    for(let i=1;i<path.length;i++) {
+      const a=path[i-1],b=path[i],dx=b[0]-a[0],dy=b[1]-a[1];
+      const p=[-dx,dx,-dy,dy],q=[a[0]-box.left,box.right-a[0],a[1]-box.top,box.bottom-a[1]];
+      let low=0,high=1,hit=true;
+      for(let j=0;j<4;j++) {
+        if(Math.abs(p[j])<1e-12){if(q[j]<0){hit=false;break;}continue;}
+        const t=q[j]/p[j];if(p[j]<0)low=Math.max(low,t);else high=Math.min(high,t);
+        if(low>high){hit=false;break;}
+      }
+      if(hit)return true;
+    }
+    return false;
+  }
+  const api={copy,paths,distance,clean,valid,nearest,split,merge,intersectsBox};
   root.BikeGeometry=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window==='undefined'?globalThis:window);

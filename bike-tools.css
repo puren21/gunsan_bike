@@ -30,3 +30,11 @@
 #bikeEditorPanel fieldset:disabled{opacity:.55}
 @media(max-width:700px){#bikeEditorPanel{width:310px;max-height:calc(100dvh - 130px);top:115px}}
 #bikeEditorPanel .bike-digitizing-tools{position:sticky;top:-17px;background:white;z-index:3;padding-top:8px;padding-bottom:8px}
+/* Compact QGIS-style buttons, matching the 34px icons in the left menu. */
+#bikeEditorPanel .bike-digitizing-tools{display:flex;flex-wrap:wrap;gap:3px;margin:8px 0;padding:5px 0}
+#bikeEditorPanel .bike-digitizing-tools button{width:34px;height:34px;min-width:34px;min-height:34px;flex:none;padding:4px;box-sizing:border-box;border-radius:4px}
+#bikeEditorPanel .bike-digitizing-tools button svg{display:block;width:24px;height:24px;flex:none;stroke-linecap:round;stroke-linejoin:round}
+#bikeEditorPanel .bike-digitizing-tools button span{display:none}
+#bikeEditorPanel .bike-digitizing-tools button:focus-visible{outline:2px solid #1769aa;outline-offset:1px}
+.bike-selection-box{position:absolute;z-index:2000;border:1px dashed #276cbd;background:rgba(51,132,224,.16);pointer-events:none;box-sizing:border-box}
+.bike-selection-box[hidden]{display:none!important}
