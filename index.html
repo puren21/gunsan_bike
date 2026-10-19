@@ -9683,18 +9683,14 @@ const gunsanStorage = {
       <button id="roadLegendToggle" type="button" aria-controls="roadLegendContent" aria-expanded="true" aria-label="범례 접기" title="범례 접기">−</button>
     </div>
     <div id="roadLegendContent">
-    <ul>
-      <li><svg id="legendCity" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#007F86" stroke-width="5"/></svg><span>시도</span></li>
-      <li><svg id="legendMyeon" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#D94A3A" stroke-width="5"/></svg><span>면도</span></li>
-      <li><svg id="legendRi" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#3659C9" stroke-width="5"/></svg><span>리도</span></li>
-      <li><svg id="legendFarm" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#C88700" stroke-width="5"/></svg><span>농도</span></li>
-    </ul>
-    <hr class="road-legend-divider">
-    <ul class="road-legend-status" aria-label="도로 개설 상태">
-      <li><svg viewBox="0 0 48 24" aria-hidden="true"><path id="legendStatusNormal" d="M2 12H46" stroke="#737d89" stroke-width="4"/></svg><span>개설</span></li>
-      <li><svg viewBox="0 0 48 24" aria-hidden="true"><path id="legendStatusUnopened" d="M2 12H46" stroke="#737d89" stroke-width="4" stroke-dasharray="8 5"/></svg><span>미개설</span></li>
-      <li><svg viewBox="0 0 48 24" aria-hidden="true"><path id="legendStatusPlan" d="M2 12H46" stroke="#737d89" stroke-width="4" stroke-dasharray="1 6" stroke-linecap="round"/></svg><span>계획구간</span></li>
-    </ul>
+<ul>
+<li><svg id="legendCity" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#77B959" stroke-width="5"/></svg><span>전용도로</span></li>
+<li><svg id="legendMyeon" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#E7725A" stroke-width="5"/></svg><span>전용차로</span></li>
+<li><svg id="legendRi" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#8896F8" stroke-width="5"/></svg><span>우선도로</span></li>
+<li><svg id="legendFarm" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#CDAD5A" stroke-width="5"/></svg><span>겸용도로(분리)</span></li>
+<li><svg id="legendShared" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#9762CB" stroke-width="5"/></svg><span>겸용도로(비분리)</span></li>
+<li><svg id="legendOther" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#75808A" stroke-width="5"/></svg><span>기타</span></li>
+</ul>
     </div>
   </aside>
 
@@ -9755,9 +9751,9 @@ const gunsanStorage = {
 
     <div class="road-kind-filters" aria-label="도로 종류 필터">
       <button type="button" class="road-kind-filter active" data-kind="city">시도</button>
-      <button type="button" class="road-kind-filter active" data-kind="myeon">면도</button>
-      <button type="button" class="road-kind-filter active" data-kind="ri">리도</button>
-      <button type="button" class="road-kind-filter active" data-kind="farm">농도</button>
+      <button type="button" class="road-kind-filter active" data-kind="myeon">전용차로</button>
+      <button type="button" class="road-kind-filter active" data-kind="ri">우선도로</button>
+      <button type="button" class="road-kind-filter active" data-kind="farm">겸용도로(분리)</button>
     </div>
 
     <div class="search-result-summary">
@@ -9926,7 +9922,7 @@ const gunsanStorage = {
           </div>
 
           <div class="style-row" data-style="MYEON">
-            <span>면도</span><div class="color-code-control"><input class="style-color" type="color" aria-label="면도 선 색상"><input class="style-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="면도 선 색상 코드"></div>
+            <span>전용차로</span><div class="color-code-control"><input class="style-color" type="color" aria-label="면도 선 색상"><input class="style-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="면도 선 색상 코드"></div>
             <div class="color-code-control"><input class="style-base-color" type="color" aria-label="면도 배경 색상"><input class="style-base-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="면도 배경 색상 코드"></div>
             <input class="style-top" type="number" min="1" max="20" aria-label="면도 선 두께">
             <input class="style-base" type="number" min="1" max="30" aria-label="면도 배경 두께">
@@ -9935,7 +9931,7 @@ const gunsanStorage = {
           </div>
 
           <div class="style-row" data-style="RI">
-            <span>리도</span><div class="color-code-control"><input class="style-color" type="color" aria-label="리도 선 색상"><input class="style-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="리도 선 색상 코드"></div>
+            <span>우선도로</span><div class="color-code-control"><input class="style-color" type="color" aria-label="리도 선 색상"><input class="style-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="리도 선 색상 코드"></div>
             <div class="color-code-control"><input class="style-base-color" type="color" aria-label="리도 배경 색상"><input class="style-base-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="리도 배경 색상 코드"></div>
             <input class="style-top" type="number" min="1" max="20" aria-label="리도 선 두께">
             <input class="style-base" type="number" min="1" max="30" aria-label="리도 배경 두께">
@@ -9944,7 +9940,7 @@ const gunsanStorage = {
           </div>
 
           <div class="style-row" data-style="FARM">
-            <span>농도</span><div class="color-code-control"><input class="style-color" type="color" aria-label="농도 선 색상"><input class="style-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="농도 선 색상 코드"></div>
+            <span>겸용도로(분리)</span><div class="color-code-control"><input class="style-color" type="color" aria-label="농도 선 색상"><input class="style-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="농도 선 색상 코드"></div>
             <div class="color-code-control"><input class="style-base-color" type="color" aria-label="농도 배경 색상"><input class="style-base-color-code color-code-input" type="text" maxlength="7" spellcheck="false" aria-label="농도 배경 색상 코드"></div>
             <input class="style-top" type="number" min="1" max="20" aria-label="농도 선 두께">
             <input class="style-base" type="number" min="1" max="30" aria-label="농도 배경 두께">
@@ -10039,6 +10035,8 @@ const gunsanStorage = {
       if (panel) panel.style.display = "none";
     }
   </script>
+  <link rel="stylesheet" href="bike-tools.css">
+  <script src="bike-tools.js"></script>
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"
     onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
 
@@ -10099,6 +10097,19 @@ const gunsanStorage = {
         return Math.max(Number.isFinite(minValue) ? minValue : 1, snapped);
       }
 
+      const BIKE_CATEGORIES = ["전용도로", "전용차로", "우선도로", "겸용도로(분리)", "겸용도로(비분리)", "기타"];
+      const BIKE_STYLE_KEYS = ["CITY", "MYEON", "RI", "FARM", "SHARED", "OTHER"];
+      function normalizeBikeCategory(value) {
+        const text = String(value || "").trim();
+        if (["겸용도로(분)", "겸용도로(분리)"].includes(text)) return "겸용도로(분리)";
+        if (["겸용도로(비분)", "겸용도로(비분리)"].includes(text)) return "겸용도로(비분리)";
+        return BIKE_CATEGORIES.includes(text) ? text : "기타";
+      }
+      function bikeCategory(properties) {
+        const p = properties || {};
+        return normalizeBikeCategory(p["구분"] || p.GUBUN || p.gubun || p["자전거도로"]);
+      }
+
       const COLORS = {
         CITY: "#007F86",   // 청록 계열
         MYEON: "#D94A3A",  // 적갈/적색 계열
@@ -10144,6 +10155,16 @@ const gunsanStorage = {
         ]
       };
 
+      DEFAULT_STYLES.SHARED = { ...DEFAULT_STYLES.FARM, color:"#9762CB" };
+      DEFAULT_STYLES.OTHER = { ...DEFAULT_STYLES.FARM, color:"#75808A" };
+      SKY_ROAD_COLORS.SHARED = "#CC99FF";
+      SKY_ROAD_COLORS.OTHER = "#CCCCCC";
+      for (const key of ["SHARED", "OTHER"]) {
+        DEFAULT_ROAD_LAYER_STACKS[key] = JSON.parse(JSON.stringify(DEFAULT_ROAD_LAYER_STACKS.FARM));
+        DEFAULT_ROAD_LAYER_STACKS[key][0].color = DEFAULT_STYLES[key].color;
+        DEFAULT_ROAD_LAYER_STACKS[key][0].skyColor = SKY_ROAD_COLORS[key];
+      }
+
       let ROAD_LAYER_STACKS;
 
       try {
@@ -10157,6 +10178,10 @@ const gunsanStorage = {
       } catch (error) {
         ROAD_LAYER_STACKS =
           JSON.parse(JSON.stringify(DEFAULT_ROAD_LAYER_STACKS));
+      }
+
+      for (const key of ["SHARED", "OTHER"]) {
+        if (!ROAD_LAYER_STACKS[key]) ROAD_LAYER_STACKS[key] = JSON.parse(JSON.stringify(DEFAULT_ROAD_LAYER_STACKS[key]));
       }
 
       const DEFAULT_STATUS_STYLES = {
@@ -14646,7 +14671,7 @@ const gunsanStorage = {
           gunsanStorage.removeItem("labelStyles");
           gunsanStorage.removeItem("townshipLabelStyles");
           syncStyleInputs();
-          ["CITY", "MYEON", "RI", "FARM"].forEach(syncRoadLayerStackForStyle);
+          BIKE_STYLE_KEYS.forEach(syncRoadLayerStackForStyle);
           applyStatusStyles();
           applyLabelScale();
           applyLabelAppearance();
@@ -14849,12 +14874,7 @@ const gunsanStorage = {
         return Math.min(max, Math.max(min, Number.isFinite(number) ? number : min));
       }
 
-      const ROAD_LAYER_NAMES = {
-        CITY: "시도",
-        MYEON: "면도",
-        RI: "리도",
-        FARM: "농도"
-      };
+      const ROAD_LAYER_NAMES = Object.fromEntries(BIKE_STYLE_KEYS.map((key, i) => [key, BIKE_CATEGORIES[i]]));
 
       function getRoadLayerStack(styleKey) {
         const stack = ROAD_LAYER_STACKS[styleKey];
@@ -15210,7 +15230,7 @@ const gunsanStorage = {
         const card = document.createElement("section");
         card.className = "layer-style-menu-card";
 
-        ["CITY", "MYEON", "RI", "FARM"].forEach(function(styleKey) {
+        BIKE_STYLE_KEYS.forEach(function(styleKey) {
           const stack = getRoadLayerStack(styleKey);
           const enabled = stack.some(function(item) { return item.visible !== false; });
           const row = makeStyleMenuRow(ROAD_LAYER_NAMES[styleKey], "", function() {
@@ -15238,14 +15258,7 @@ const gunsanStorage = {
           card.appendChild(row);
         });
 
-        card.appendChild(makeStyleMenuRow(
-          "개설상태 표현",
-          "",
-          function() {
-            roadLayerEditorView = { type:"status", styleKey:null, parent:"lineMain" };
-            renderRoadLayerEditor();
-          }
-        ));
+
 
         body.appendChild(card);
       }
@@ -15890,7 +15903,7 @@ const gunsanStorage = {
       }
 
       function applyRoadStyles() {
-        ["CITY", "MYEON", "RI", "FARM"].forEach(function(styleKey) {
+        BIKE_STYLE_KEYS.forEach(function(styleKey) {
           const stack = getRoadLayerStack(styleKey);
 
           if (stack.length) {
@@ -15914,7 +15927,7 @@ const gunsanStorage = {
       }
 
       function updateLegendStyles() {
-        const keys = { legendCity:"CITY", legendMyeon:"MYEON", legendRi:"RI", legendFarm:"FARM" };
+        const keys = { legendCity:"CITY", legendMyeon:"MYEON", legendRi:"RI", legendFarm:"FARM", legendShared:"SHARED", legendOther:"OTHER" };
         Object.entries(keys).forEach(function(entry) {
           const element = document.getElementById(entry[0]);
           if (!element) return;
@@ -19575,25 +19588,7 @@ const gunsanStorage = {
 
 
       function getRoadGroupTypeLabel(group) {
-        if (!group) return "";
-        if (group.layerId === "city") return "시도";
-
-        const values = [];
-        (group.propertiesList || []).forEach(function(p) {
-          const value = safe(
-            p && (
-              p.GUBUN !== undefined ? p.GUBUN :
-              p["구분"] !== undefined ? p["구분"] : (p["자전거도로"] || "")
-            )
-          );
-          if (value && value !== "-" && values.indexOf(value) === -1) values.push(value);
-        });
-
-        const normalized = values.find(function(value) {
-          return value === "면도" || value === "리도" || value === "농도";
-        });
-
-        return normalized || values[0] || "자전거도로";
+        return bikeCategory(group && group.propertiesList && group.propertiesList[0]);
       }
 
       function removeSelectedRouteBalloon() {
@@ -19787,7 +19782,7 @@ const gunsanStorage = {
 
       function refreshResolutionNormalizedVisuals() {
         // 사용자가 설정한 숫자는 4K 기준값으로 유지하고 화면 출력에만 배율을 적용함.
-        ["CITY", "MYEON", "RI", "FARM"].forEach(function(styleKey) {
+        BIKE_STYLE_KEYS.forEach(function(styleKey) {
           syncRoadLayerStackForStyle(styleKey);
         });
 
@@ -20604,55 +20599,12 @@ const gunsanStorage = {
       }
 
       async function fetchOnlineRoadEdits(group) {
-        const editKey = sacheonRoadEditKey(group);
-        if (!editKey) return null;
-
-        const response = await fetch(
-          SACHEON_MEMO_REST_URL + "/route_memos?route_number=eq." +
-          encodeURIComponent(editKey) +
-          "&select=route_number,memo,updated_at",
-          { headers:SACHEON_MEMO_HEADERS, cache:"no-store" }
-        );
-
-        if (!response.ok) {
-          throw new Error("온라인 편집정보 불러오기 실패 (" + response.status + ")");
-        }
-
-        const rows = await response.json();
-        if (!rows || !rows[0] || !rows[0].memo) return null;
-
-        try {
-          const parsed = JSON.parse(String(rows[0].memo));
-          return parsed && typeof parsed === "object" ? parsed : null;
-        } catch (error) {
-          console.error("온라인 편집정보 형식 오류", error);
-          return null;
-        }
+        return JSON.parse(gunsanStorage.getItem("bike-edit:" + group.key) || "null");
       }
 
       async function saveOnlineRoadEdits(group, payload) {
-        const editKey = sacheonRoadEditKey(group);
-        const updated = new Date().toISOString();
-
-        const response = await fetch(
-          SACHEON_MEMO_REST_URL + "/route_memos?on_conflict=route_number",
-          {
-            method:"POST",
-            headers:Object.assign({}, SACHEON_MEMO_HEADERS, {
-              "Prefer":"resolution=merge-duplicates,return=minimal"
-            }),
-            body:JSON.stringify({
-              route_number:editKey,
-              memo:JSON.stringify(payload),
-              updated_at:updated
-            })
-          }
-        );
-
-        if (!response.ok) {
-          const detail = await response.text();
-          throw new Error("온라인 편집정보 저장 실패 (" + response.status + "): " + detail);
-        }
+        gunsanStorage.setItem("bike-edit:" + group.key, JSON.stringify(payload));
+        setTimeout(function() { window.dispatchEvent(new Event("bike-dataset-changed")); }, 50);
       }
 
       function applyRoadEditValuesToRoad(group, road, values) {
@@ -20667,7 +20619,7 @@ const gunsanStorage = {
           if (values.end !== undefined) setPropertyValue(props, ["종점"], "종점", values.end);
         } else {
           if (values.status !== undefined) {
-            props["개설여부"] = values.status;
+            delete props["개설여부"];
             delete props["기타"];
           }
           if (values.lane !== undefined) setPropertyValue(props, ["차선"], "차선", values.lane);
@@ -25302,60 +25254,15 @@ const gunsanStorage = {
       }
 
       function roadInlineEditAttributes(group, road) {
-        const list = group.propertiesList || [];
-        const props = road && road.properties ? road.properties : (list[0] || {});
-        const currentStatus = road && road.statusKey
-          ? road.statusKey
-          : getRoadStatusKey(props, group.layerId);
-
-        if (group.layerId === "city") {
-          return '<form id="roadEditForm" class="popup-inline-edit-form">' +
-            popupEditRow("도로구분", "roadType", "시도", "text", null, true) +
-            popupEditRow("노선명", "number", group.number, "text", null, true) +
-            popupEditRow("구간상태", "statusSummary", statusLengthSummary(group), "text", null, true) +
-            popupEditRow("총연장", "totalLength", formatRoadLength(
-              list.reduce(function(sum,p) { return sum + parseRoadLength(p["연장"]); }, 0)
-            ), "text", null, true, "m") +
-            popupEditRow("개설상태", "status", statusValueFromKey(currentStatus), "select",
-              ["개설", "미확장", "미개설"]) +
-            popupEditRow("검토", "review", safe(props["검토"]) === "-" ? "" : props["검토"], "text") +
-            popupEditRow("시점", "start", safe(props["시점"]) === "-" ? "" : props["시점"], "text") +
-            popupEditRow("종점", "end", safe(props["종점"]) === "-" ? "" : props["종점"], "text") +
-          '</form>';
-        }
-
+        const p = road ? road.properties : group.propertiesList[0] || {};
         return '<form id="roadEditForm" class="popup-inline-edit-form">' +
           popupEditRow("노선명", "number", group.number, "text", null, true) +
-          popupEditRow(
-            "구분",
-            "gubun",
-            String(props.GUBUN || props["구분"] || getRoadGroupTypeLabel(group)),
-            "select",
-            ["겸용도로(분)", "겸용도로(비분)", "전용도로", "전용차로", "우선도로"]
-          ) +
-          popupEditRow("구간현황", "statusSummary", statusLengthSummary(group), "text", null, true) +
-          popupEditRow("차선현황", "laneSummary", rangeValues(list, "차선"), "text", null, true) +
-          popupEditRow("도로폭", "widthSummary", rangeValues(list, "도로폭"), "text", null, true, "m") +
+          popupEditRow("구분", "gubun", bikeCategory(p), "select", BIKE_CATEGORIES) +
+          popupEditRow("도로폭", "widthSelected", p["도로폭"] || "", "text", null, false, "m") +
           popupEditRow("총연장", "totalLength", formatRoadLengthKm(groupRoadGeometryTotalKm(group)), "text", null, true, "km") +
-          popupEditRow("차선현황(선택구간)", "laneSelected", safe(props["차선"]) === "-" ? "" : props["차선"], "text") +
-          popupEditRow("도로폭(선택구간)", "widthSelected", safe(props["도로폭"]) === "-" ? "" : props["도로폭"], "text", null, false, "m") +
-          popupEditRow("연장(선택구간)", "length", formatRoadLengthKm(roadGeometryLengthKm(road)), "text", null, true, "km") +
-          popupEditRow("기점", "start", safe(props["기점"] || props["시점"]) === "-" ? "" : props["기점"], "text") +
-          popupEditRow("종점", "end", safe(props["종점"]) === "-" ? "" : props["종점"], "text") +
-          popupEditRow("특이사항", "specialNote", safe(props["특이사항"]) === "-" ? "" : props["특이사항"], "text") +
-          popupEditRow(
-            "개설여부",
-            "status",
-            classifyRuralRoadStatus(
-              String(props.GUBUN || props["구분"] || getRoadGroupTypeLabel(group)),
-              safe(props["차선"]) === "-" ? "" : props["차선"],
-              safe(props["도로폭"]) === "-" ? "" : props["도로폭"]
-            ),
-            "text",
-            null,
-            true
-          ) +
-        '</form>';
+          popupEditRow("기점", "start", p["기점"] || p["시점"] || "", "text") +
+          popupEditRow("종점", "end", p["종점"] || "", "text") +
+          popupEditRow("특이사항", "specialNote", p["특이사항"] || p["비고"] || "", "text") + '</form>';
       }
 
       function roadLineEditBlock(group) {
@@ -25392,7 +25299,6 @@ const gunsanStorage = {
                 ? roadInlineEditAttributes(group, road)
                 : (
                   row("도로구분", "시도") + row("노선명", group.number) +
-                  row("구간상태", statusLengthSummary(group), "", "wrap-status") +
                   row("총연장", formatRoadLength(total), " m") +
                   row("검토", joinValues(uniqueValues(list, "검토"))) +
                   row("시점", joinValues(uniqueValues(list, "시점"))) +
@@ -25424,7 +25330,6 @@ const gunsanStorage = {
               : (
                 row("노선명", group.number) +
                 row("구분", getRoadGroupTypeLabel(group)) +
-                row("구간현황", statusLengthSummary(group), "", "wrap-status") +
                 row("차선현황", rangeValues(list, "차선")) +
                 row("도로폭", rangeValues(list, "도로폭"), " m") +
                 row("총연장", formatRoadLengthKm(groupRoadGeometryTotalKm(group)), " km") +
@@ -25433,8 +25338,7 @@ const gunsanStorage = {
                 row("연장(선택구간)", formatRoadLengthKm(roadGeometryLengthKm(road)), " km") +
                 row("기점", joinValues(uniqueValues(list, "기점"))) +
                 row("종점", joinValues(uniqueValues(list, "종점"))) +
-                row("특이사항", safe(current["특이사항"])) +
-                row("개설여부", roadStatusLabel(currentStatus))
+                row("특이사항", safe(current["특이사항"]))
               )) +
           '</div>' +
           roadLineEditBlock(group) +
@@ -26174,6 +26078,30 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
       /*
        * 속성값 처리
        */
+      window.installBikeTools({
+        map, ready: Promise.all([roadsReadyPromise, townshipBoundaryReadyPromise]),
+        categories: BIKE_CATEGORIES, normalizeCategory: normalizeBikeCategory,
+        read: buildCurrentChangedRoadGeoJSON, replace: replaceChangedRoadDatasetNow,
+        storage: gunsanStorage, escape: escapeHTML,
+        showRoute: function(name) {
+          const group = groups.get("rural::" + name);
+          if (!group) return;
+          townshipStartMode = false; townshipStartCompleted = true;
+          map.setBounds(group.bounds, 100, 90, 100, 90);
+          overviewMapLevel = Math.max(overviewMapLevel, map.getLevel() + 1);
+          applyRoadVisibility(); updateLabels();
+        },
+        publish: async function(data, token) {
+          await overwriteGithubRoadFile("roads.geojson", data, token || getRoadGithubToken(), "군산시 자전거도로 노선 입력 및 편집");
+        },
+        token: getRoadGithubToken,
+        stopOtherTools: function() {
+          closeRoadPopup();
+          if (roadviewMode) roadviewBtn.click();
+          if (measureMode && typeof clearMeasure === "function") clearMeasure();
+        }
+      });
+
       function getNumber(properties, layerId) {
         if (layerId === "city") {
           return safe(properties.number);
@@ -26187,112 +26115,22 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
       }
 
       function getColor(properties, layerId) {
-        if (layerId === "city") {
-          return COLORS.CITY;
-        }
-
-        const type = String(
-          properties["구분"] || properties.GUBUN || properties.gubun || properties["자전거도로"] || ""
-        ).trim();
-
-        if (type === "면도") {
-          return COLORS.MYEON;
-        }
-
-        if (type === "리도") {
-          return COLORS.RI;
-        }
-
-        if (type === "농도") {
-          return COLORS.FARM;
-        }
-
-        return COLORS.OTHER;
+        return DEFAULT_STYLES[getStyleKey(properties, layerId)].color;
       }
 
       function getStyleKey(properties, layerId) {
-        if (layerId === "city") return "CITY";
-
-        const type = String(
-          properties["구분"] || properties.GUBUN || properties.gubun || properties["자전거도로"] || ""
-        ).trim();
-
-        if (type === "면도") return "MYEON";
-        if (type === "리도") return "RI";
-        if (type === "농도") return "FARM";
-        return "FARM";
+        return BIKE_STYLE_KEYS[BIKE_CATEGORIES.indexOf(bikeCategory(properties))];
       }
 
-      function getRoadStatusKey(properties, layerId) {
-        if (properties && (properties["자전도로명"] || properties["자전거도로명"]) && !properties["개설여부"]) return "NORMAL";
-        properties = properties || {};
-
-        if (layerId === "city") {
-          const status = String(properties["개설여부"] || "").trim();
-          if (status.includes("미개설")) return "UNOPENED";
-          if (status.includes("미확장")) return "UNEXPANDED";
-          return "NORMAL";
-        }
-
-        const gubun =
-          properties["구분"] ||
-          properties.GUBUN ||
-          properties.gubun ||
-          "";
-
-        const lane =
-          properties["차선"] ??
-          properties["차선현황"] ??
-          properties.lane ??
-          properties.LANE ??
-          "";
-
-        const width =
-          properties["도로폭"] ??
-          properties["폭원"] ??
-          properties.width ??
-          properties.WIDTH ??
-          "";
-
-        const autoStatus = classifyRuralRoadStatus(gubun, lane, width);
-
-        if (autoStatus === "미개설") return "UNOPENED";
-        if (autoStatus === "계획구간") return "PLAN";
-        return "NORMAL";
-      }
+      function getRoadStatusKey() { return "NORMAL"; }
 
       function normalizeRuralRoadAutoStatus(properties) {
-        if (properties && (properties["자전도로명"] || properties["자전거도로명"])) return properties["개설여부"] || "미입력";
-        if (!properties) return "계획구간";
-
-        delete properties["기타"];
-        delete properties["포장"];
-        delete properties["미포장"];
-
-        const gubun =
-          properties["구분"] ||
-          properties.GUBUN ||
-          properties.gubun ||
-          "";
-
-        const lane =
-          properties["차선"] ??
-          properties["차선현황"] ??
-          properties.lane ??
-          properties.LANE ??
-          "";
-
-        const width =
-          properties["도로폭"] ??
-          properties["폭원"] ??
-          properties.width ??
-          properties.WIDTH ??
-          "";
-
-        const status = classifyRuralRoadStatus(gubun, lane, width);
-        properties["개설여부"] = status;
-
-        return status;
+        if (properties) {
+          delete properties["개설여부"];
+          delete properties.Opened;
+          delete properties.Opend;
+        }
+        return "";
       }
 
       function roadStatusLabel(statusKey) {

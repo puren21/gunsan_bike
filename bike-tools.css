@@ -1,0 +1,17 @@
+#bikeControls{position:fixed;z-index:120;display:flex;flex-direction:column;align-items:flex-end;gap:7px;pointer-events:none}
+#bikeControls button{pointer-events:auto;background:#fff;border:1px solid #d9dde3;border-radius:7px;box-shadow:0 2px 7px #0003;color:#185b82;cursor:pointer;min-height:46px}
+#bikeLayerBtn{width:50px;font-size:27px}#bikeLayerBtn[aria-pressed=true]{background:#daf3df;border-color:#24934a}
+#bikeEditorBtn{font-size:22px;padding:3px 9px;display:flex;align-items:center;gap:5px}#bikeEditorBtn span{font-size:12px;font-weight:700}
+#bikeEditorPanel{position:fixed;right:12px;top:124px;width:340px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 145px);overflow:auto;box-sizing:border-box;z-index:125;background:#fff;border-radius:15px;padding:17px;box-shadow:0 6px 28px #0003;font:14px/1.5 -apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif;color:#243746}
+#bikeEditorPanel[hidden]{display:none}#bikeEditorPanel header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}#bikeEditorPanel h2{font-size:18px;margin:0}#bikeEditorPanel header button{font-size:24px;border:0;background:none}
+#bikeEditorPanel label{display:block;font-weight:600;margin:10px 0}#bikeEditorPanel input,#bikeEditorPanel select,#bikeEditorPanel textarea{display:block;box-sizing:border-box;width:100%;font:inherit;border:1px solid #cbd5df;border-radius:7px;background:#fff;color:#243746;padding:8px;margin-top:5px}
+#bikeEditorPanel fieldset{min-width:0;border:1px solid #d9e1e8;border-radius:9px;padding:9px;margin:15px 0}#bikeEditorPanel legend{font-weight:700}#bikeEditorPanel p{font-size:12px;color:#526777;margin:9px 0;white-space:pre-line}
+#bikeEditorPanel button{font:inherit;cursor:pointer;border:1px solid #ced8e2;border-radius:7px;padding:8px;background:#f5f8fa;color:#184f73}#bikeEditorPanel button:disabled{opacity:.5;cursor:wait}#bikeEditorPanel .bike-primary{width:100%;background:#1769aa;color:white;border-color:#1769aa;font-weight:700}
+#bikeEditorPanel .bike-actions{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}#bikeEditorPanel .bike-actions button{font-size:12px;flex:1;white-space:nowrap}#bikeEditorPanel .bike-two{display:flex;gap:10px}#bikeEditorPanel .bike-two label{width:50%}#bikeEditorPanel .error{color:#b52525}#bikeEditorPanel summary{cursor:pointer;font-weight:600}#bikeEditorMessage{min-height:18px}
+/* Status classifications are not used by the bicycle dataset. */
+#roadMapLegend ul{grid-template-columns:1fr}#roadMapLegend{width:205px}
+#stylePanel .status-style-settings{display:none!important}
+@media(max-width:700px){#bikeEditorPanel{top:115px;max-height:calc(100dvh - 130px);right:8px;width:310px}#bikeControls button{min-height:40px}#bikeLayerBtn{width:44px;font-size:24px}#bikeEditorBtn span{font-size:11px}#bikeEditorBtn{font-size:18px}}
+
+.top-toolbar.has-bike-tools{padding-right:60px!important;position:fixed!important}.top-toolbar #bikeControls{position:absolute;top:0;right:0}
+.status-style-settings:has(#unexpandedStyle){display:none!important}
