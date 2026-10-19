@@ -13,6 +13,26 @@ window.installBikeTools = function(api) {
   let editing=false,ready=false,busy=false,dirty=false,attrDirty=false,activeId=null,part=0,mode='select';
   let dataset={type:'FeatureCollection',features:[]},serverDataset=null,baseline='',savedDataset=null;
   let selected=new Set(),undoStack=[],redoStack=[],overlays=[],markers=[],capture=[],shift=false,lastSaved='';
+  let captureCursor=null, cursorFrame=0;
+  const rubberBand=new kakao.maps.Polyline({strokeColor:'#1676D2',strokeWeight:4,strokeOpacity:0.9,strokeStyle:'dash',zIndex:925});
+  function updateRubberBand() {
+    cursorFrame=0;
+    if(!editing||!['draw','split'].includes(mode)||!capture.length||!captureCursor) {rubberBand.setMap(null);return;}
+    const tip=mode==='draw'?snap(captureCursor):captureCursor;
+    rubberBand.setOptions({strokeColor:mode==='split'?'#D72973':'#1676D2'});
+    rubberBand.setPath([point(capture[capture.length-1]),point(tip)]);
+    rubberBand.setMap(map);
+  }
+  function followCursor(event) {
+    if(!editing||!['draw','split'].includes(mode))return;
+    captureCursor=coord(event.latLng);
+    if(!cursorFrame)cursorFrame=requestAnimationFrame(updateRubberBand);
+  }
+  kakao.maps.event.addListener(map,'mousemove',followCursor);
+  kakao.maps.event.addListener(rubberBand,'mousemove',followCursor);
+  kakao.maps.event.addListener(rubberBand,'click',event=>{kakao.maps.event.preventMap();dispatchClick(coord(event.latLng));});
+  kakao.maps.event.addListener(rubberBand,'rightclick',()=>{kakao.maps.event.preventMap();finishCapture();});
+  document.getElementById('map').addEventListener('mouseleave',()=>{captureCursor=null;rubberBand.setMap(null);});
   const msg=(text,error=false)=>{ $('bikeEditorMessage').textContent=text;$('bikeEditorMessage').classList.toggle('error',error); };
   const nameOf=f=>String(f.properties.number||f.properties['자전도로명']||f.properties['자전거도로명']||f.properties.NUM||'');
   const idOf=f=>f.properties.__bike_id;
@@ -71,10 +91,10 @@ window.installBikeTools = function(api) {
     $('bikeTool-vertex').disabled=!activeId;$('bikeTool-split').disabled=!selected.size;$('bikeTool-merge').disabled=selected.size<2;$('bikeTool-delete').disabled=!selected.size;
     $('bikeTool-undo').disabled=!undoStack.length&&!attrDirty;$('bikeTool-redo').disabled=!redoStack.length;
     for(const id of ['bikeSaveBtn','bikeStopBtn','bikePublishBtn','bikeEditorClose','bikeEditorBtn'])$(id).disabled=busy;
-    const text={select:'지도에서 라인을 클릭해 선택하세요. Shift를 누르거나 다중 선택 도구로 여러 라인을 선택합니다.',multi:'병합할 라인을 차례로 클릭하세요. 다시 클릭하면 선택 해제됩니다. 병합 도구는 2개 이상 선택하면 활성화됩니다.',draw:'지도 클릭: 점 추가 · 우클릭 또는 그리기 완료: 라인 생성 · Esc: 취소',vertex:'꼭지점 드래그: 이동 · 선 위 클릭: 점 추가 · 꼭지점 우클릭: 삭제 · 끝점 스냅 지원',split:'선택한 라인을 가로지르는 절단선을 클릭해 그린 뒤 우클릭 또는 자르기 실행을 누르세요.'};
+    const text={select:'지도에서 라인을 클릭해 선택하세요. Shift를 누르거나 다중 선택 도구로 여러 라인을 선택합니다.',multi:'병합할 라인을 차례로 클릭하세요. 다시 클릭하면 선택 해제됩니다. 병합 도구는 2개 이상 선택하면 활성화됩니다.',draw:'첫 점 클릭 후 마우스를 움직이면 선이 따라옵니다. 클릭: 점 고정 · 우클릭/완료: 라인 생성 · Esc: 취소',vertex:'꼭지점 드래그: 이동 · 선 위 클릭: 점 추가 · 꼭지점 우클릭: 삭제 · 끝점 스냅 지원',split:'선택한 라인을 가로지르는 절단선을 클릭해 그린 뒤 우클릭 또는 자르기 실행을 누르세요.'};
     $('bikeGeometryHelp').textContent=text[mode]||text.select;$('bikeFinishBtn').hidden=!['draw','split'].includes(mode);$('bikeCancelToolBtn').hidden=!['draw','split','vertex'].includes(mode);$('bikeFinishBtn').textContent=mode==='split'?'자르기 실행':'그리기 완료';
   }
-  function removeOverlays() {overlays.forEach(s=>s.setMap(null));overlays=[];markers.forEach(m=>m.setMap(null));markers=[];}
+  function removeOverlays() {rubberBand.setMap(null);overlays.forEach(s=>s.setMap(null));overlays=[];markers.forEach(m=>m.setMap(null));markers=[];}
   function line(path,options={}) {
     const obj=new kakao.maps.Polyline({map,path:path.map(point),strokeColor:'#E60045',strokeWeight:5,zIndex:900,...options});overlays.push(obj);return obj;
   }
@@ -86,6 +106,7 @@ window.installBikeTools = function(api) {
         if(picked)line(path,{strokeColor:'#FFFFFF',strokeWeight:9,zIndex:902});
         line(path,{strokeColor:color,strokeWeight:picked?5:4,zIndex:picked?903:900});
         const hit=line(path,{strokeColor:'#000000',strokeOpacity:0.01,strokeWeight:14,zIndex:905});
+        kakao.maps.event.addListener(hit,'mousemove',followCursor);
         kakao.maps.event.addListener(hit,'click',e=>{kakao.maps.event.preventMap();dispatchClick(coord(e.latLng),idOf(f),partIndex);});
         kakao.maps.event.addListener(hit,'rightclick',()=>{kakao.maps.event.preventMap();finishCapture();});
       });
@@ -113,7 +134,7 @@ window.installBikeTools = function(api) {
         });markers.push(marker);
       });
     }
-    updateUI();
+    updateUI();updateRubberBand();
   }
   function snap(c,skipId=null,skipPart=-1,skipIndex=-1) {
     if(!$('bikeSnapCheck').checked)return c;const p=project(c);let best=12,result=c;
@@ -122,7 +143,7 @@ window.installBikeTools = function(api) {
       const q=project(path[i]),d=Math.hypot(q[0]-p[0],q[1]-p[1]);if(d<best){best=d;result=[...path[i]];}
     })));return result;
   }
-  function setMode(next) {mode=next;capture=[];map.setCursor(['draw','split','vertex'].includes(mode)?'crosshair':'');updateUI();paint();}
+  function setMode(next) {mode=next;capture=[];captureCursor=null;map.setCursor(['draw','split','vertex'].includes(mode)?'crosshair':'');updateUI();paint();}
   function selectFeature(id,multi=false,partIndex=0) {
     if(!commitAttributes())return;
     if(multi){if(selected.has(id))selected.delete(id);else selected.add(id);}else selected=new Set([id]);
@@ -130,7 +151,7 @@ window.installBikeTools = function(api) {
   }
   function dispatchClick(c,id=null,partIndex=0) {
     if(!editing||busy)return;
-    if(mode==='draw'||mode==='split') {capture.push(mode==='draw'?snap(c):c);paint();return;}
+    if(mode==='draw'||mode==='split') {capture.push(mode==='draw'?snap(c):c);captureCursor=c;paint();return;}
     if(mode==='vertex') {
       const f=active();if(!f)return;const path=G.paths(f)[part],near=G.nearest(path,c,project);
       if(!near||near.distance>18){msg('선택한 라인 가까이를 클릭해 꼭지점을 추가하세요.',true);return;}
