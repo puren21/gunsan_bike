@@ -9887,7 +9887,7 @@ const gunsanStorage = {
         <div class="layer-item"><input id="cityCheck" type="checkbox" checked><label for="cityCheck">시도</label></div>
         <div class="layer-item"><input id="ruralCheck" type="checkbox" checked><label for="ruralCheck">자전거도로</label></div>
         <div class="layer-section-label">행정경계</div>
-        <div class="layer-item"><input id="townshipBoundaryCheck" type="checkbox"><label for="townshipBoundaryCheck">읍면동</label></div>
+        <div class="layer-item"><input id="townshipBoundaryCheck" type="checkbox"><label for="townshipBoundaryCheck">동경계·동명칭</label></div>
         <div class="layer-item"><input id="riBoundaryCheck" type="checkbox"><label for="riBoundaryCheck">리 경계</label></div>
         <div class="boundary-auto-note">리 경계는 지도 축척 1:75,000 이하에서 자동 표시됩니다.</div>
       </div>
@@ -10410,8 +10410,8 @@ const gunsanStorage = {
       let baseRoadDatasetVisible = true;
 
       let selectedTownshipName = null;
-      let townshipStartMode = true;
-      let townshipStartCompleted = false;
+      let townshipStartMode = false;
+      let townshipStartCompleted = true;
       let townshipSelectionFillShown = false;
       let townshipFillTimer = null;
       let activeTownshipHoverGroup = null;
@@ -15374,7 +15374,7 @@ const gunsanStorage = {
         card.innerHTML =
           '<label class="layer-map-toggle"><input id="editorHybridCheck" type="checkbox"><span>하이브리드</span></label>' +
           '<label class="layer-map-toggle"><input id="editorDistrictCheck" type="checkbox"><span>지적편집도</span></label>' +
-          '<label class="layer-map-toggle"><input id="editorTownshipBoundaryCheck" type="checkbox"><span>읍면동 경계</span></label>' +
+          '<label class="layer-map-toggle"><input id="editorTownshipBoundaryCheck" type="checkbox"><span>동경계·동명칭</span></label>' +
           '<label class="layer-map-toggle"><input id="editorRiBoundaryCheck" type="checkbox"><span>리 경계</span></label>';
         body.appendChild(card);
 
@@ -16051,7 +16051,7 @@ const gunsanStorage = {
       }
 
       function shouldAutoShowTownshipBoundary() {
-        return map.getLevel() >= overviewMapLevel;
+        return false; // 동경계는 사용자가 레이어를 켠 경우에만 표시합니다.
       }
 
       function setMapOptionsIfChanged(shape, options) {
@@ -16070,8 +16070,14 @@ const gunsanStorage = {
 
       function syncTownshipBoundaryDisplay() {
         const layer = BOUNDARY_LAYERS.townshipBoundary;
+        // 경계는 선 레이어로만 표시하며 초기 선택용 면과 클릭 영역은 숨깁니다.
+        townshipSelectGroups.forEach(function(group) {
+          [group.polygons, group.skyBackPolygons, group.hitPolygons].forEach(function(shapes) {
+            (shapes || []).forEach(function(shape) { setOverlayMapIfChanged(shape, null); });
+          });
+        });
         const showDetail = layer.visible && layer.detailLoaded;
-        const showOverview = !showDetail && !mapInteracting && shouldAutoShowTownshipBoundary();
+        const showOverview = layer.visible && !showDetail && !mapInteracting;
         const options = {
           strokeColor: isSkyViewMode ? "#FFFFFF" : "#59636D",
           strokeWeight: mapStrokePx(isSkyViewMode ? 2.6 : 1.6, 1),
@@ -16104,8 +16110,9 @@ const gunsanStorage = {
           });
         });
 
-        // 공유 경계 Polyline의 간략/원본 표시를 동기화
+        // 동경계와 동명칭은 같은 레이어 설정을 따릅니다.
         syncTownshipBoundaryDisplay();
+        updateTownshipLabelVisibility();
       }
 
       
@@ -17161,21 +17168,7 @@ const gunsanStorage = {
       }
 
       function shouldShowTownshipLabel(name) {
-        if (!name) return false;
-
-        const isDong = /동$/.test(String(name).trim());
-
-        // 초기 읍면동 선택 화면에서는 동 명칭을 숨기고 읍·면 명칭만 표시.
-        if (townshipStartMode && isDong) return true;
-
-        if (shouldAutoShowTownshipBoundary()) return true;
-
-        // 읍·면은 기존처럼 표시
-        if (!isDong) return true;
-
-        // 초기화면 종료 후 동 명칭은 1:61,000 이하에서만 표시
-        const scale = Number(currentScaleDenominator);
-        return Number.isFinite(scale) && scale <= 61000;
+        return !!name && BOUNDARY_LAYERS.townshipBoundary.visible;
       }
 
       function updateTownshipLabelVisibility() {
