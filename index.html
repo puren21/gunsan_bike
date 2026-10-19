@@ -10037,7 +10037,7 @@ const gunsanStorage = {
   </script>
   <link rel="stylesheet" href="bike-tools.css?v=20261019-10">
   <script src="bike-geometry.js?v=20261019-9"></script>
-  <script src="bike-tools.js?v=20261019-10"></script>
+  <script src="bike-tools.js?v=20261019-11"></script>
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"
     onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
 
@@ -19376,7 +19376,7 @@ const gunsanStorage = {
       }
 
       /*
-       * 속성 팝업: 클릭한 조각이 아니라 노선명 전체 구간을 요약
+       * 속성 팝업: 선택한 라인의 속성과 실제 선형 연장만 표시
        */
       function uniqueValues(list, key) {
         return Array.from(new Set(list.map(function(p) { return safe(p[key]); }).filter(function(v) { return v !== "-"; })));
@@ -19749,8 +19749,7 @@ const gunsanStorage = {
             enabled &&
             roadIndex >= 0 &&
             roadIndex === selectedRoadSegmentIndex;
-          const highlightColor =
-            isSelectedSegment ? "#E60012" : "#0057FF";
+          const highlightColor = "#E60012";
 
           const statusHidden = isRoadStatusHidden(road.statusKey);
 
@@ -19768,7 +19767,7 @@ const gunsanStorage = {
             }
 
             setMapOptionsIfChanged(line, {
-              strokeColor: enabled
+              strokeColor: isSelectedSegment
                 ? highlightColor
                 : getRoadLayerDisplayColor(road.styleKey, config),
               strokeWeight: mapStrokePx(
@@ -19782,16 +19781,16 @@ const gunsanStorage = {
                 ),
                 1
               ),
-              strokeOpacity: enabled
+              strokeOpacity: isSelectedSegment
                 ? 1
                 : Math.max(
                     0,
                     Math.min(100, Number(config.opacity) || 0)
                   ) / 100,
-              // 색상만 선택구간 빨강/나머지 파랑으로 바꾸고,
+              // 선택한 라인만 빨강으로 강조하고 다른 라인은 원래 색상을 유지함.
               // 개설/미개설/계획의 solid/dash/dot은 그대로 유지함.
               strokeStyle: getRoadLayerStrokeStyle(road, config, index),
-              zIndex: enabled ? 90 - index : 40 - index
+              zIndex: isSelectedSegment ? 90 - index : 40 - index
             });
           });
 
@@ -19805,7 +19804,7 @@ const gunsanStorage = {
                 road.hitLine.setMap(map);
               }
               setMapOptionsIfChanged(road.hitLine, {
-                zIndex: enabled ? 130 : 60
+                zIndex: isSelectedSegment ? 130 : 60
               });
             }
           }
@@ -20584,7 +20583,12 @@ const gunsanStorage = {
       function openRoadEditor(groupKey) {
         if (window.bikeEditor) {
           const group = groups.get(groupKey);
-          if (group) window.bikeEditor.selectFromRoute(group.number, Math.max(0, group.roads.indexOf(getEditableRoad(groupKey))));
+          if (group) {
+            const road = getEditableRoad(groupKey);
+            const id = road && road.properties && road.properties.__bike_id;
+            if (id) window.bikeEditor.selectFromId(id);
+            else window.bikeEditor.selectFromRoute(group.number, Math.max(0, group.roads.indexOf(road)));
+          }
           return;
         }
         const group = groups.get(groupKey);
@@ -24747,8 +24751,8 @@ const gunsanStorage = {
         if (!group) return;
 
         const clickedRoad =
+          (road && group.roads.includes(road) ? road : null) ||
           findClosestRoadInGroup(group, position) ||
-          road ||
           null;
 
         selectedRoadPopupState = {
@@ -25296,7 +25300,7 @@ const gunsanStorage = {
           popupEditRow("노선명", "number", group.number, "text", null, true) +
           popupEditRow("구분", "gubun", bikeCategory(p), "select", BIKE_CATEGORIES) +
           popupEditRow("도로폭", "widthSelected", p["도로폭"] || "", "text", null, false, "m") +
-          popupEditRow("총연장", "totalLength", formatRoadLengthKm(groupRoadGeometryTotalKm(group)), "text", null, true, "km") +
+          popupEditRow("연장", "totalLength", formatRoadDataLengthKm(roadGeometryLengthKm(road)), "text", null, true, "km") +
           popupEditRow("기점", "start", p["기점"] || p["시점"] || "", "text") +
           popupEditRow("종점", "end", p["종점"] || "", "text") +
           popupEditRow("특이사항", "specialNote", p["특이사항"] || p["비고"] || "", "text") + '</form>';
@@ -25365,17 +25369,14 @@ const gunsanStorage = {
             (roadEditSessionGroupKey === group.key
               ? roadInlineEditAttributes(group, road)
               : (
-                row("노선명", group.number) +
-                row("구분", getRoadGroupTypeLabel(group)) +
-                row("차선현황", rangeValues(list, "차선")) +
-                row("도로폭", rangeValues(list, "도로폭"), " m") +
-                row("총연장", formatRoadLengthKm(groupRoadGeometryTotalKm(group)), " km") +
-                row("차선현황(선택구간)", current["차선"] !== undefined && current["차선"] !== null && String(current["차선"]).trim() !== "" ? current["차선"] : "-") +
-                row("도로폭(선택구간)", current["도로폭"] !== undefined && current["도로폭"] !== null && String(current["도로폭"]).trim() !== "" ? current["도로폭"] : "-", current["도로폭"] !== undefined && current["도로폭"] !== null && String(current["도로폭"]).trim() !== "" ? " m" : "") +
-                row("연장(선택구간)", formatRoadLengthKm(roadGeometryLengthKm(road)), " km") +
-                row("기점", joinValues(uniqueValues(list, "기점"))) +
-                row("종점", joinValues(uniqueValues(list, "종점"))) +
-                row("특이사항", safe(current["특이사항"]))
+                row("노선명", getNumber(current, group.layerId)) +
+                row("구분", bikeCategory(current)) +
+                row("차선현황", current["차선"]) +
+                row("도로폭", current["도로폭"], current["도로폭"] !== undefined && String(current["도로폭"]).trim() !== "" ? " m" : "") +
+                row("연장", formatRoadDataLengthKm(roadGeometryLengthKm(road)), " km") +
+                row("기점", current["기점"] || current["시점"]) +
+                row("종점", current["종점"]) +
+                row("특이사항", current["특이사항"] || current["비고"])
               )) +
           '</div>' +
           roadLineEditBlock(group) +
@@ -26125,11 +26126,13 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
           const top = getRoadLayerStack(key).find(item => item.visible !== false);
           return top ? getRoadLayerDisplayColor(key, top) : ROAD_STYLES[key].color;
         },
-        showRoute: function(name) {
+        showRoute: function(name, feature) {
           const group = groups.get("rural::" + name);
           if (!group) return;
           townshipStartMode = false; townshipStartCompleted = true;
-          map.setBounds(group.bounds, 100, 90, 100, 90);
+          const bounds = new kakao.maps.LatLngBounds();
+          if (feature) getLines(feature.geometry).forEach(path => path.forEach(c => bounds.extend(new kakao.maps.LatLng(c[1], c[0]))));
+          map.setBounds(bounds.isEmpty() ? group.bounds : bounds, 100, 90, 100, 90);
           overviewMapLevel = Math.max(overviewMapLevel, map.getLevel() + 1);
           applyRoadVisibility(); updateLabels();
         },

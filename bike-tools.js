@@ -252,11 +252,12 @@ window.installBikeTools = function(api) {
     msg('편집할 라인을 지도에서 클릭하세요.');
   }
   window.bikeEditor={get active(){return editing;},start,
+    selectFromId(id){if(!editing)start();if(dataset.features.some(f=>idOf(f)===id))selectFeature(id);},
     selectFromRoute(name,index=0){if(!editing)start();const candidates=dataset.features.filter(f=>nameOf(f)===name);if(candidates.length)selectFeature(idOf(candidates[Math.min(index,candidates.length-1)]));}
   };
   $('bikeEditorBtn').onclick=()=>editing?save(true):start();$('bikeEditorClose').onclick=()=>save(true);$('bikeStopBtn').onclick=()=>save(true);
   $('bikeRouteForm').onsubmit=e=>{e.preventDefault();save();};[$('bikeRouteName'),$('bikeAttributes')].forEach(input=>input.addEventListener('input',()=>{attrDirty=true;updateUI();}));
-  $('bikeRouteSelect').onchange=e=>{if(e.target.value){selectFeature(e.target.value);const f=active();if(f)api.showRoute(nameOf(f));}};$('bikePartSelect').onchange=e=>{if(commitAttributes()){part=Number(e.target.value);setMode('vertex');}};
+  $('bikeRouteSelect').onchange=e=>{if(e.target.value){selectFeature(e.target.value);const f=active();if(f)api.showRoute(nameOf(f),copy(f));}};$('bikePartSelect').onchange=e=>{if(commitAttributes()){part=Number(e.target.value);setMode('vertex');}};
   ['select','draw','vertex','split','multi'].forEach(tool=>$('bikeTool-'+tool).onclick=()=>{if(commitAttributes())setMode(tool);});
   $('bikeTool-merge').onclick=mergeSelected;$('bikeTool-delete').onclick=deleteSelected;$('bikeTool-undo').onclick=undo;$('bikeTool-redo').onclick=redo;
   $('bikeFinishBtn').onclick=finishCapture;$('bikeCancelToolBtn').onclick=()=>setMode('select');
