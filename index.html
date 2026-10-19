@@ -9684,12 +9684,12 @@ const gunsanStorage = {
     </div>
     <div id="roadLegendContent">
 <ul>
-<li><svg id="legendCity" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#77B959" stroke-width="5"/></svg><span>전용도로</span></li>
-<li><svg id="legendMyeon" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#E7725A" stroke-width="5"/></svg><span>전용차로</span></li>
-<li><svg id="legendRi" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#8896F8" stroke-width="5"/></svg><span>우선도로</span></li>
-<li><svg id="legendFarm" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#CDAD5A" stroke-width="5"/></svg><span>겸용도로(분리)</span></li>
-<li><svg id="legendShared" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#9762CB" stroke-width="5"/></svg><span>겸용도로(비분리)</span></li>
-<li><svg id="legendOther" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#75808A" stroke-width="5"/></svg><span>기타</span></li>
+<li><svg id="legendCity" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#D94A45" stroke-width="5"/></svg><span>전용도로</span></li>
+<li><svg id="legendMyeon" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#159EA6" stroke-width="5"/></svg><span>전용차로</span></li>
+<li><svg id="legendRi" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#2E9F59" stroke-width="5"/></svg><span>우선도로</span></li>
+<li><svg id="legendFarm" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#D99516" stroke-width="5"/></svg><span>겸용도로(분리)</span></li>
+<li><svg id="legendShared" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#355FCC" stroke-width="5"/></svg><span>겸용도로(비분리)</span></li>
+<li><svg id="legendOther" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#424A53" stroke-width="5"/></svg><span>기타</span></li>
 </ul>
     </div>
   </aside>
@@ -10035,9 +10035,9 @@ const gunsanStorage = {
       if (panel) panel.style.display = "none";
     }
   </script>
-  <link rel="stylesheet" href="bike-tools.css?v=20261019-4">
-  <script src="bike-geometry.js?v=20261019-4"></script>
-  <script src="bike-tools.js?v=20261019-4"></script>
+  <link rel="stylesheet" href="bike-tools.css?v=20261019-5">
+  <script src="bike-geometry.js?v=20261019-5"></script>
+  <script src="bike-tools.js?v=20261019-5"></script>
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"
     onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
 
@@ -10118,52 +10118,79 @@ const gunsanStorage = {
         FARM: "#C88700",   // 황토/노랑 계열
         OTHER: "#7A7A7A",
         BASE: "#FFFFFF",
-        SELECTED: "#E60012"
+        SELECTED: "#B63AC2"
       };
 
       const DEFAULT_STYLES = {
         // 2026-09-14 통합 레이어 메뉴 기준값
-        CITY:  { color: "#77B959", baseColor: "#FFFFFF", top: 4, base: 7.0, mid: 4.0, inner: 0, topOpacity: 100, baseOpacity: 100 },
-        MYEON: { color: "#E7725A", baseColor: "#FFFFFF", top: 4, base: 6.0, mid: 4.0, inner: 0, topOpacity: 100, baseOpacity: 100 },
-        RI:    { color: "#8896F8", baseColor: "#FFFFFF", top: 4, base: 6.0, mid: 4.0, inner: 0, topOpacity: 100, baseOpacity: 100 },
-        FARM:  { color: "#CDAD5A", baseColor: "#FFFFFF", top: 4, base: 6.0, mid: 4.0, inner: 0, topOpacity: 100, baseOpacity: 100 }
+        CITY:  { color: "#D94A45", baseColor: "#FFFFFF", top: 4, base: 7.0, mid: 4.0, inner: 0, topOpacity: 100, baseOpacity: 100 },
+        MYEON: { color: "#159EA6", baseColor: "#FFFFFF", top: 4, base: 6.0, mid: 4.0, inner: 0, topOpacity: 100, baseOpacity: 100 },
+        RI:    { color: "#2E9F59", baseColor: "#FFFFFF", top: 4, base: 6.0, mid: 4.0, inner: 0, topOpacity: 100, baseOpacity: 100 },
+        FARM:  { color: "#D99516", baseColor: "#FFFFFF", top: 4, base: 6.0, mid: 4.0, inner: 0, topOpacity: 100, baseOpacity: 100 }
       };
 
       // 스카이뷰 전용 고대비 도로색
       const SKY_ROAD_COLORS = {
-        CITY:  "#00E5FF",  // 밝은 청록
-        MYEON: "#FF453A",  // 선명한 적색
-        RI:    "#1E5BFF",  // 강한 파랑
-        FARM:  "#FFC400"   // 선명한 노랑
+        CITY:  "#FF7368",  // 밝은 청록
+        MYEON: "#45D4DC",  // 선명한 적색
+        RI:    "#60D884",  // 강한 파랑
+        FARM:  "#FFC759"   // 선명한 노랑
       };
 
       const DEFAULT_ROAD_LAYER_STACKS = {
         CITY: [
-          { name: "기본라인", color: "#77B959", skyColor: "#77B959", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
+          { name: "기본라인", color: "#D94A45", skyColor: "#D94A45", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
           { name: "외곽라인", color: "#FFFFFF", skyColor: "#FFFFFF", width: 7.0, lineStyle: "inherit", opacity: 100, visible: true }
         ],
         MYEON: [
-          { name: "기본라인", color: "#E7725A", skyColor: "#E7725A", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
+          { name: "기본라인", color: "#159EA6", skyColor: "#159EA6", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
           { name: "외곽라인", color: "#FFFFFF", skyColor: "#FFFFFF", width: 6.0, lineStyle: "inherit", opacity: 100, visible: true }
         ],
         RI: [
-          { name: "기본라인", color: "#8896F8", skyColor: "#8896F8", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
+          { name: "기본라인", color: "#2E9F59", skyColor: "#2E9F59", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
           { name: "외곽라인", color: "#FFFFFF", skyColor: "#FFFFFF", width: 6.0, lineStyle: "inherit", opacity: 100, visible: true }
         ],
         FARM: [
-          { name: "기본라인", color: "#CDAD5A", skyColor: "#CDAD5A", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
+          { name: "기본라인", color: "#D99516", skyColor: "#D99516", width: 4.0, lineStyle: "inherit", opacity: 100, visible: true },
           { name: "외곽라인", color: "#FFFFFF", skyColor: "#FFFFFF", width: 6.0, lineStyle: "inherit", opacity: 100, visible: true }
         ]
       };
 
-      DEFAULT_STYLES.SHARED = { ...DEFAULT_STYLES.FARM, color:"#9762CB" };
-      DEFAULT_STYLES.OTHER = { ...DEFAULT_STYLES.FARM, color:"#75808A" };
-      SKY_ROAD_COLORS.SHARED = "#CC99FF";
-      SKY_ROAD_COLORS.OTHER = "#CCCCCC";
+      DEFAULT_STYLES.SHARED = { ...DEFAULT_STYLES.FARM, color:"#355FCC" };
+      DEFAULT_STYLES.OTHER = { ...DEFAULT_STYLES.FARM, color:"#424A53" };
+      SKY_ROAD_COLORS.SHARED = "#789CFF";
+      SKY_ROAD_COLORS.OTHER = "#C0C7D0";
       for (const key of ["SHARED", "OTHER"]) {
         DEFAULT_ROAD_LAYER_STACKS[key] = JSON.parse(JSON.stringify(DEFAULT_ROAD_LAYER_STACKS.FARM));
         DEFAULT_ROAD_LAYER_STACKS[key][0].color = DEFAULT_STYLES[key].color;
         DEFAULT_ROAD_LAYER_STACKS[key][0].skyColor = SKY_ROAD_COLORS[key];
+      }
+
+      // Reference legend palette; migrate only unchanged defaults, preserving custom styling.
+      for (const key of BIKE_STYLE_KEYS) {
+        DEFAULT_ROAD_LAYER_STACKS[key][0].skyColor = SKY_ROAD_COLORS[key];
+      }
+      if (gunsanStorage.getItem("bikePaletteVersion") !== "2026-10-19-reference-1") {
+        const previous = {
+          CITY:["#77B959", "#00E5FF"], MYEON:["#E7725A", "#FF453A"],
+          RI:["#8896F8", "#1E5BFF"], FARM:["#CDAD5A", "#FFC400"],
+          SHARED:["#9762CB", "#CC99FF"], OTHER:["#75808A", "#CCCCCC"]
+        };
+        try {
+          const styles = JSON.parse(gunsanStorage.getItem("roadStyles") || "null");
+          const stacks = JSON.parse(gunsanStorage.getItem("roadLayerStacks") || "null");
+          for (const key of BIKE_STYLE_KEYS) {
+            const old = previous[key];
+            if (styles && styles[key] && old.includes(styles[key].color)) styles[key].color = DEFAULT_STYLES[key].color;
+            if (stacks && Array.isArray(stacks[key])) stacks[key].forEach(function(item) {
+              if (old.includes(item.color)) item.color = DEFAULT_STYLES[key].color;
+              if (old.includes(item.skyColor)) item.skyColor = SKY_ROAD_COLORS[key];
+            });
+          }
+          if (styles) gunsanStorage.setItem("roadStyles", JSON.stringify(styles));
+          if (stacks) gunsanStorage.setItem("roadLayerStacks", JSON.stringify(stacks));
+          gunsanStorage.setItem("bikePaletteVersion", "2026-10-19-reference-1");
+        } catch (error) { console.warn("색상 기본값 갱신 실패", error); }
       }
 
       let ROAD_LAYER_STACKS;
@@ -26093,6 +26120,11 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
         categories: BIKE_CATEGORIES, normalizeCategory: normalizeBikeCategory,
         read: buildCurrentChangedRoadGeoJSON, replace: replaceChangedRoadDatasetNow,
         storage: gunsanStorage, escape: escapeHTML,
+        colorForCategory: function(category) {
+          const key = BIKE_STYLE_KEYS[BIKE_CATEGORIES.indexOf(normalizeBikeCategory(category))];
+          const top = getRoadLayerStack(key).find(item => item.visible !== false);
+          return top ? getRoadLayerDisplayColor(key, top) : ROAD_STYLES[key].color;
+        },
         showRoute: function(name) {
           const group = groups.get("rural::" + name);
           if (!group) return;

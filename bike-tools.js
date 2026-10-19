@@ -75,14 +75,13 @@ window.installBikeTools = function(api) {
     $('bikeGeometryHelp').textContent=text[mode]||text.select;$('bikeFinishBtn').hidden=!['draw','split'].includes(mode);$('bikeCancelToolBtn').hidden=!['draw','split','vertex'].includes(mode);$('bikeFinishBtn').textContent=mode==='split'?'자르기 실행':'그리기 완료';
   }
   function removeOverlays() {overlays.forEach(s=>s.setMap(null));overlays=[];markers.forEach(m=>m.setMap(null));markers=[];}
-  const palette=['#77B959','#E7725A','#8896F8','#CDAD5A','#9762CB','#75808A'];
   function line(path,options={}) {
     const obj=new kakao.maps.Polyline({map,path:path.map(point),strokeColor:'#E60045',strokeWeight:5,zIndex:900,...options});overlays.push(obj);return obj;
   }
   function paint() {
     removeOverlays();if(!editing)return;
     dataset.features.forEach(f=>{
-      const picked=selected.has(idOf(f)),color=picked?'#F8A900':palette[categories.indexOf(api.normalizeCategory(f.properties['구분']||f.properties.GUBUN||f.properties['자전거도로']))];
+      const picked=selected.has(idOf(f)),color=picked?'#B63AC2':api.colorForCategory(api.normalizeCategory(f.properties['구분']||f.properties.GUBUN||f.properties['자전거도로']));
       G.paths(f).forEach((path,partIndex)=>{
         if(picked)line(path,{strokeColor:'#FFFFFF',strokeWeight:9,zIndex:902});
         line(path,{strokeColor:color,strokeWeight:picked?5:4,zIndex:picked?903:900});
@@ -250,7 +249,7 @@ window.installBikeTools = function(api) {
   };
   let layerEnabled=false;
   function syncOverlay(){map.removeOverlayMapTypeId(kakao.maps.MapTypeId.BICYCLE);map.removeOverlayMapTypeId(kakao.maps.MapTypeId.BICYCLE_HYBRID);if(layerEnabled)map.addOverlayMapTypeId(map.getMapTypeId()===kakao.maps.MapTypeId.ROADMAP?kakao.maps.MapTypeId.BICYCLE:kakao.maps.MapTypeId.BICYCLE_HYBRID);}
-  $('bikeLayerBtn').onclick=()=>{layerEnabled=!layerEnabled;$('bikeLayerBtn').setAttribute('aria-pressed',String(layerEnabled));syncOverlay();};kakao.maps.event.addListener(map,'maptypeid_changed',syncOverlay);
+  $('bikeLayerBtn').onclick=()=>{layerEnabled=!layerEnabled;$('bikeLayerBtn').setAttribute('aria-pressed',String(layerEnabled));syncOverlay();};kakao.maps.event.addListener(map,'maptypeid_changed',()=>{syncOverlay();if(editing)paint();});
   api.ready.then(async()=>{
     const raw=api.read(),oldFingerprint=fingerprint(raw);serverDataset=normalize(raw);baseline=fingerprint(serverDataset);dataset=copy(serverDataset);let olderDraft=null;
     const text=storage.getItem('bike-draft-v3')||storage.getItem('bike-draft-v2');
