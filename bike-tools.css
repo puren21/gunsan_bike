@@ -15,3 +15,4 @@
 
 .top-toolbar.has-bike-tools{padding-right:60px!important;position:fixed!important}.top-toolbar #bikeControls{position:absolute;top:0;right:0}
 .status-style-settings:has(#unexpandedStyle){display:none!important}
+#bikeEditorPanel [hidden]{display:none!important}
