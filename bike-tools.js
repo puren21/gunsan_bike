@@ -24,7 +24,7 @@ window.installBikeTools = function(api) {
   const dock=document.createElement('section');dock.id='bikeEditDock';dock.setAttribute('aria-label','이동 가능한 편집 도구');
   dock.innerHTML='<span class="bike-drag-handle" title="드래그하여 편집 도구 이동" aria-label="편집 도구 이동">⠿</span>';
   dock.append(panel.querySelector('.bike-digitizing-tools'));
-  const listButton=document.createElement('button');listButton.id='bikeTableBtn';listButton.type='button';listButton.title='속성테이블 · 목록';listButton.setAttribute('aria-label','속성테이블 · 목록');listButton.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#526f84" stroke-width="1.5"><path d="M3 4h18v16H3zM3 9h18M3 14h18M9 4v16"/></svg>';
+  const listButton=document.createElement('button');listButton.id='bikeTableBtn';listButton.type='button';listButton.disabled=true;listButton.title='속성테이블 · 목록';listButton.setAttribute('aria-label','속성테이블 · 목록');listButton.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#526f84" stroke-width="1.5"><path d="M3 4h18v16H3zM3 9h18M3 14h18M9 4v16"/></svg>';
   dock.querySelector('.bike-digitizing-tools').append(listButton);document.body.append(dock);
   const tablePanel=document.createElement('section');tablePanel.id='bikeTablePanel';tablePanel.hidden=true;tablePanel.setAttribute('aria-label','자전거도로 속성테이블');
   tablePanel.innerHTML='<header><h2>자전거도로 속성테이블</h2><button type="button" id="bikeTableClose" aria-label="속성테이블 닫기">×</button></header><div class="bike-table-actions"><input id="bikeTableSearch" placeholder="노선·속성 검색" aria-label="노선·속성 검색"><span id="bikeTableCount"></span></div><p>행을 클릭하면 지도에서 선택합니다. 셀을 수정한 뒤 편집 창의 저장을 누르세요.</p><div class="bike-table-scroll"><table><thead></thead><tbody></tbody></table></div>';
@@ -317,7 +317,27 @@ window.installBikeTools = function(api) {
     }
     msg('편집할 라인을 지도에서 클릭하세요. 저장은 이 브라우저에 보관하며, 다른 컴퓨터 공유는 GitHub 반영이 필요합니다.');
   }
-  window.bikeEditor={get active(){return editing;},start,
+  function validateImport(raw) {
+    if(!raw||raw.type!=='FeatureCollection'||!Array.isArray(raw.features)||!raw.features.length)throw Error('노선이 포함된 GeoJSON FeatureCollection 파일을 선택하세요.');
+    const data=copy(raw);
+    data.features.forEach((f,i)=>{
+      if(!f.geometry||!['LineString','MultiLineString'].includes(f.geometry.type))throw Error((i+1)+'번째 구간이 선형 자료가 아닙니다.');
+      const paths=G.paths(f);
+      if(!paths.length||!paths.every(path=>G.valid(path)&&path.every(c=>Array.isArray(c)&&Number.isFinite(c[0])&&Number.isFinite(c[1])&&Math.abs(c[0])<=180&&Math.abs(c[1])<=90)))throw Error((i+1)+'번째 구간의 좌표가 올바르지 않습니다. QGIS에서 EPSG:4326 경위도 GeoJSON으로 내보내세요.');
+      f.properties=f.properties||{};
+      if(!nameOf(f).trim())f.properties.number='노선명 미입력 '+String(i+1).padStart(4,'0');
+      if(!f.properties.__bike_id)f.properties.__bike_id=uid();
+    });return normalize(data);
+  }
+  async function importData(raw) {
+    if(!ready||busy)throw Error('지도가 준비된 뒤 다시 시도하세요.');
+    const next=validateImport(raw),previous=captureState(),wasEditing=editing;
+    dataset=next;selected.clear();activeId=null;part=0;attrDirty=false;dirty=true;capture=[];captureCursor=null;setMode('select');
+    if(await save(wasEditing)){fillRoutes();return true;}
+    dataset=previous.dataset;selected=new Set(previous.ids);activeId=previous.activeId;part=previous.part;fillRoutes();loadAttributes();paint();return false;
+  }
+  window.bikeEditor={get active(){return editing;},start,validateImport,importData,
+    exportData(){if(!ready){msg('지도가 준비된 뒤 다시 시도하세요.',true);return;}$('bikeExportBtn').click();},
     selectFromId(id){if(!editing)start();if(dataset.features.some(f=>idOf(f)===id))selectFeature(id);},
     selectFromRoute(name,index=0){if(!editing)start();const candidates=dataset.features.filter(f=>nameOf(f)===name);if(candidates.length)selectFeature(idOf(candidates[Math.min(index,candidates.length-1)]));}
   };
