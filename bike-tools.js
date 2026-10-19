@@ -103,7 +103,7 @@ window.installBikeTools = function(api) {
     $('bikeTool-vertex').disabled=!activeId;$('bikeTool-split').disabled=!selected.size;$('bikeTool-merge').disabled=selected.size<2;$('bikeTool-delete').disabled=!selected.size;
     $('bikeTool-undo').disabled=!undoStack.length&&!attrDirty;$('bikeTool-redo').disabled=!redoStack.length;
     for(const id of ['bikeSaveBtn','bikeStopBtn','bikePublishBtn','bikeEditorClose','bikeEditorBtn'])$(id).disabled=busy;
-    const text={select:'라인을 클릭해 선택하세요. 마우스 드래그는 지도 화면 이동입니다. Shift+클릭: 추가 선택',multi:'라인을 차례로 클릭해 선택을 추가합니다. 다시 클릭하면 선택 해제됩니다. 드래그는 지도 화면 이동입니다.',draw:'시작점부터 모든 입력점이 기존 라인의 끝점·꼭지점·선분에 스냅됩니다 (12px). 분홍 원: 스냅 위치 · 클릭: 점 고정 · 우클릭/완료: 라인 생성 · Esc: 취소',vertex:'꼭지점 드래그: 이동 · 선 위 클릭: 점 추가 · 꼭지점 우클릭: 삭제 · 꼭지점·선분 스냅 지원',split:'선택한 라인을 가로지르는 절단선을 클릭해 그린 뒤 우클릭 또는 자르기 실행을 누르세요.'};
+    const text={select:'라인을 클릭해 선택하세요. 마우스 드래그는 지도 화면 이동입니다. Shift+클릭: 추가 선택',multi:'라인을 차례로 클릭해 선택을 추가합니다. 다시 클릭하면 선택 해제됩니다. 드래그는 지도 화면 이동입니다.',draw:'시작점부터 모든 입력점이 기존 라인의 끝점·꼭지점·선분에 스냅됩니다 (12px). 분홍 원: 스냅 위치 · 클릭: 점 고정 · 우클릭/완료: 라인 생성 · Esc: 취소',vertex:'꼭지점 드래그: 이동 · 기존 라인의 끝점·꼭지점·선분에 스냅 (12px) · 분홍 원: 스냅 위치 · 선 위 클릭: 점 추가 · 꼭지점 우클릭: 삭제',split:'선택한 라인을 가로지르는 절단선을 클릭해 그린 뒤 우클릭 또는 자르기 실행을 누르세요.'};
     $('bikeGeometryHelp').hidden=mode==='select';$('bikeGeometryHelp').textContent=mode==='select'?'':text[mode]||'';$('bikeToolActions').hidden=!['draw','split','vertex'].includes(mode);$('bikeFinishBtn').hidden=!['draw','split'].includes(mode);$('bikeCancelToolBtn').hidden=!['draw','split','vertex'].includes(mode);$('bikeFinishBtn').textContent=mode==='split'?'자르기 실행':'그리기 완료';
   }
   function removeOverlays() {rubberBand.setMap(null);overlays.forEach(s=>s.setMap(null));overlays=[];markers.forEach(m=>m.setMap(null));markers=[];}
@@ -164,8 +164,8 @@ window.installBikeTools = function(api) {
     snapIndicator.setMap(null);updateRubberBand();
   };
   function setMode(next) {
-    if(next==='draw'){
-      // Every new drawing session starts with snapping, including its first point.
+    if(['draw','vertex'].includes(next)){
+      // Drawing and vertex movement start with endpoint/vertex/segment snapping enabled.
       $('bikeSnapCheck').checked=true;storage.setItem('bike-snap-enabled','true');
     }
     mode=next;capture=[];captureCursor=null;snapIndicator.setMap(null);map.setCursor(['draw','split','vertex'].includes(mode)?'crosshair':'');updateUI();paint();}

@@ -11,7 +11,7 @@ test('every drawing click snaps: first endpoint, interior segment and final endp
  assert.deepEqual(ctx.capture,[original[0],[126.505,35.9],original[1]]);
  assert.deepEqual(original,[[126.5,35.9],[126.51,35.9]]);
 });
-test('drawing re-enables a previously disabled snap preference',()=>{
+for(const mode of ['draw','vertex'])test(mode+' re-enables a previously disabled snap preference',()=>{
  const checkbox={checked:false},stored=new Map(),ctx={mode:'select',capture:[],captureCursor:null,$:()=>checkbox,storage:{setItem:(k,v)=>stored.set(k,v)},snapIndicator:{setMap(){}},map:{setCursor(){}},updateUI(){},paint(){}};
- load('setMode',ctx)('draw');assert.equal(checkbox.checked,true);assert.equal(stored.get('bike-snap-enabled'),'true');
+ load('setMode',ctx)(mode);assert.equal(checkbox.checked,true);assert.equal(stored.get('bike-snap-enabled'),'true');
 });
