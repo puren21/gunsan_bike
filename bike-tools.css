@@ -45,3 +45,17 @@
 
 
 #bikeEditorMessage:empty{display:none}
+/* Floating digitizing toolbar and QGIS-style attribute table. */
+#bikeEditDock{position:fixed;z-index:130;display:flex;align-items:center;gap:4px;padding:4px;border:1px solid #cbd5df;border-radius:7px;background:#fff;box-shadow:0 2px 8px #0002;max-width:calc(100vw - 16px);box-sizing:border-box}
+.bike-drag-handle{font-size:22px;color:#7a8995;cursor:move;user-select:none;touch-action:none}
+#bikeEditDock .bike-digitizing-tools{display:flex;gap:3px;flex-wrap:wrap}
+#bikeEditDock button{display:flex;align-items:center;justify-content:center;width:34px;height:34px;padding:4px;border:1px solid #ced8e2;border-radius:4px;background:#f5f8fa;cursor:pointer;box-sizing:border-box}
+#bikeEditDock button svg{width:24px;height:24px;stroke-linecap:round;stroke-linejoin:round}
+#bikeEditDock button span{display:none}#bikeEditDock button:disabled{opacity:.4;cursor:not-allowed}
+#bikeEditDock button[aria-pressed=true]{background:#e3efff;border-color:#3980cf}#bikeEditDock button:focus-visible{outline:2px solid #1769aa}
+#bikeEditorPanel,#bikeTablePanel{resize:both;min-width:290px;min-height:190px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px)}
+#bikeEditorPanel header,#bikeTablePanel header{cursor:move;touch-action:none;user-select:none;position:sticky;top:-17px;background:white;z-index:5;padding:6px 0}
+#bikeTablePanel{position:fixed;left:15px;bottom:15px;width:850px;height:330px;z-index:128;background:#fff;color:#243746;border:1px solid #bdcbd6;border-radius:9px;box-shadow:0 5px 25px #0003;padding:12px;box-sizing:border-box;overflow:auto;font:13px/1.5 -apple-system,BlinkMacSystemFont,'Noto Sans KR',sans-serif}
+#bikeTablePanel[hidden]{display:none}#bikeTablePanel header{top:-12px;display:flex;align-items:center;justify-content:space-between}#bikeTablePanel h2{font-size:16px;margin:0}#bikeTableClose{border:0;background:none;font-size:24px;cursor:pointer}#bikeTablePanel p{font-size:12px;color:#526777;margin:6px 0}
+.bike-table-actions{display:flex;gap:12px;align-items:center}.bike-table-actions input{padding:6px;border:1px solid #bdcbd6;border-radius:4px;width:220px}.bike-table-scroll{overflow:auto;max-height:calc(100% - 105px)}
+#bikeTablePanel table{border-collapse:separate;border-spacing:0;width:100%;font:inherit}#bikeTablePanel th{position:sticky;top:0;background:#e8eef3;text-align:left;z-index:1;font-weight:600}#bikeTablePanel td,#bikeTablePanel th{border-right:1px solid #d5dfe7;border-bottom:1px solid #d5dfe7;padding:4px 6px;white-space:nowrap}#bikeTablePanel tr:nth-child(even){background:#f7f9fb}#bikeTablePanel tr[aria-selected=true]{background:#dfedff;box-shadow:inset 3px 0 #367cca}#bikeTablePanel td input,#bikeTablePanel td select{font:inherit;color:inherit;background:transparent;border:1px solid transparent;padding:3px;min-width:110px;width:140px;box-sizing:border-box}#bikeTablePanel td input:focus,#bikeTablePanel td select:focus{background:#fff;border-color:#367cca;outline:none}#bikeTablePanel td input[readonly]{color:#687b89}
