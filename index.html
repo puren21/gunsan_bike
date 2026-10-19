@@ -10035,9 +10035,9 @@ const gunsanStorage = {
       if (panel) panel.style.display = "none";
     }
   </script>
-  <link rel="stylesheet" href="bike-tools.css?v=20261020-12">
+  <link rel="stylesheet" href="bike-tools.css?v=20261020-14">
   <script src="bike-geometry.js?v=20261019-9"></script>
-  <script src="bike-tools.js?v=20261020-12"></script>
+  <script src="bike-tools.js?v=20261020-14"></script>
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"
     onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
 
@@ -18161,12 +18161,7 @@ const gunsanStorage = {
             '</div>' +
           '</div>' +
 
-          '<div class="road-dataset-card road-compact-card" data-compact-card="import">' +
-            '<div class="road-compact-head" data-road-compact-toggle="import" role="button" tabindex="0" aria-expanded="false"><span class="road-compact-title">불러오기</span><span class="road-compact-chevron">›</span></div>' +
-            '<div class="road-compact-body" data-road-compact-body="import" hidden><label class="road-dataset-file-btn">GeoJSON 파일 선택<input id="bikeImportFile" type="file" accept=".geojson,.json,application/geo+json,application/json"></label><p id="bikeImportStatus" role="status">파일을 선택한 뒤 저장을 누르면 현재 노선을 교체합니다.</p><button id="bikeImportSave" type="button" disabled>저장</button></div>' +
-          '</div>' +
-          '<button id="bikeMenuExport" class="road-compact-head road-dataset-card road-compact-card" type="button"><span class="road-compact-title">내보내기</span><span class="road-compact-chevron">↓</span></button>';
-
+          '';
 
         const searchWrap = roadPage.querySelector(".road-search-wrap");
         if (searchWrap) {
@@ -18301,38 +18296,14 @@ const gunsanStorage = {
           });
         }
 
-        let pendingImport = null;
-        const fileInput = document.getElementById("bikeImportFile");
-        const saveButton = document.getElementById("bikeImportSave");
-        const status = document.getElementById("bikeImportStatus");
-        fileInput.onchange = async function() {
-          pendingImport = null; saveButton.disabled = true;
-          try {
-            const file = this.files && this.files[0];
-            const data = await readRoadGeoJSONFile(file);
-            if (!window.bikeEditor) throw new Error("편집 기능이 준비되지 않았습니다.");
-            pendingImport = window.bikeEditor.validateImport(data);
-            status.textContent = file.name + " · " + pendingImport.features.length + "개 구간 · 저장 대기";
-            saveButton.disabled = false;
-          } catch(error) { status.textContent = "불러오기 실패: " + error.message; }
-        };
-        saveButton.onclick = async function() {
-          if (!pendingImport) return;
-          saveButton.disabled = true;
-          try {
-            if (!await window.bikeEditor.importData(pendingImport)) throw new Error("저장하지 못했습니다. 편집 창의 안내를 확인하세요.");
-            changedRoadDatasetVisible = true; LAYERS.rural.visible = true;
-            gunsanStorage.setItem("gyeongjuChangedRoadVisible", "1");
-            applyRoadVisibility(); updateLabels();
-            const bounds = new kakao.maps.LatLngBounds();
-            pendingImport.features.forEach(f => getLines(f.geometry).forEach(path => path.forEach(c => bounds.extend(new kakao.maps.LatLng(c[1],c[0])))));
-            if (!bounds.isEmpty()) map.setBounds(bounds, 90, 90, 90, 300);
-            status.textContent = pendingImport.features.length + "개 구간을 저장하고 지도에 표시했습니다. 저장 위치: 이 브라우저.";
-            pendingImport = null; fileInput.value = "";
-          } catch(error) { status.textContent = error.message; saveButton.disabled = false; }
-        };
-        document.getElementById("bikeMenuExport").onclick = function() {
-          if (window.bikeEditor) window.bikeEditor.exportData();
+        const publishButton = document.createElement('button');
+        publishButton.type = 'button'; publishButton.textContent = '현재 노선을 사이트에 반영';
+        manager.querySelector('[data-road-compact-body="github"]').append(publishButton);
+        publishButton.onclick = async function() {
+          this.disabled = true;
+          try { await window.bikeEditor.publishData(); updateRoadGithubConnectionStatus('사이트 반영 완료', true); }
+          catch(error) { updateRoadGithubConnectionStatus(error.message, false); }
+          finally { this.disabled = false; }
         };
         baseRoadDatasetVisible = false;
         setChangedRoadDatasetVisible(true);
@@ -25954,6 +25925,14 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
         map, ready: Promise.all([roadsReadyPromise, townshipBoundaryReadyPromise]),
         categories: BIKE_CATEGORIES, normalizeCategory: normalizeBikeCategory,
         read: buildCurrentChangedRoadGeoJSON, replace: replaceChangedRoadDatasetNow,
+        showAllRoutes: function() {
+          changedRoadDatasetVisible = true; LAYERS.rural.visible = true;
+          gunsanStorage.setItem("gyeongjuChangedRoadVisible", "1");
+          applyRoadVisibility(); updateLabels();
+          const bounds = new kakao.maps.LatLngBounds();
+          groups.forEach(group => { if(group.layerId === "rural") group.paths.forEach(path => path.forEach(c => bounds.extend(c))); });
+          if(!bounds.isEmpty()) map.setBounds(bounds, 90, 90, 90, 300);
+        },
         storage: gunsanStorage, escape: escapeHTML,
         colorForCategory: function(category) {
           const key = BIKE_STYLE_KEYS[BIKE_CATEGORIES.indexOf(normalizeBikeCategory(category))];
