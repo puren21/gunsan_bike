@@ -22,7 +22,6 @@
 #bikeEditorPanel .bike-digitizing-tools button{display:flex;align-items:center;justify-content:center;gap:5px;flex-direction:column;padding:7px 3px;font-size:11px}
 #bikeEditorPanel .bike-digitizing-tools b{font-size:20px;line-height:1.1}
 #bikeEditorPanel .bike-digitizing-tools button[aria-pressed=true]{background:#e3efff;border-color:#3980cf;color:#155a99}
-#bikeSessionState{padding:7px 10px;border-radius:6px;background:#fff4ce;color:#755a12;font-size:12px;font-weight:600}
 #bikeEditorPanel .bike-check{display:flex;align-items:center;gap:7px;font-size:12px}#bikeEditorPanel .bike-check input{width:15px;margin:0}
 #bikeSelectionState{font-weight:600;color:#164e7d!important}
 #bikeEditorPanel .bike-save-actions{position:sticky;bottom:-17px;background:white;padding:10px 0;z-index:2}
@@ -37,3 +36,5 @@
 #bikeEditorPanel .bike-digitizing-tools button span{display:none}
 #bikeEditorPanel .bike-digitizing-tools button:focus-visible{outline:2px solid #1769aa;outline-offset:1px}
 .bike-snap-target{width:12px;height:12px;border:2px solid #d626a6;border-radius:50%;background:rgba(255,255,255,.65);box-sizing:border-box;pointer-events:none;box-shadow:0 0 0 1px white}
+
+#bikeEditorMessage:empty{display:none}
