@@ -13,3 +13,8 @@ test('box selection includes crossing segment with both vertices outside',()=>as
 test('box selection includes a line fully inside',()=>assert(G.intersectsBox([[2,2],[8,8]],{left:0,right:10,top:0,bottom:10})));
 test('box selection rejects line outside rectangle',()=>assert(!G.intersectsBox([[-2,-2],[12,-2]],{left:0,right:10,top:0,bottom:10})));
 test('box selection includes boundary touch without bounding-box false positive',()=>{assert(G.intersectsBox([[-5,0],[15,0]],{left:0,right:10,top:0,bottom:10}));assert(!G.intersectsBox([[-5,1],[1,-5]],{left:0,right:10,top:0,bottom:10}));});
+test('snap includes interior vertices, not only endpoints',()=>{const s=G.snapToPaths([{id:'a',part:0,path:[[0,0],[20,10],[40,0]]}],[21,11]);assert.equal(s.kind,'vertex');assert.deepEqual(s.coordinate,[20,10]);});
+test('snap projects onto a segment away from vertices',()=>{const s=G.snapToPaths([{id:'a',part:0,path:[[0,0],[100,0]]}],[50,8]);assert.equal(s.kind,'segment');assert.deepEqual(s.coordinate,[50,0]);});
+test('snap respects screen pixel tolerance at different projections',()=>{assert.equal(G.snapToPaths([{path:[[0,0],[100,0]]}],[50,8],p=>p.map(x=>x*2)),null);});
+test('moving vertex does not snap back to itself or adjacent segments',()=>{const s=G.snapToPaths([{id:'a',part:0,path:[[0,0],[20,0],[40,0]]}],[20,4],p=>p,12,{id:'a',part:0,index:1});assert.equal(s,null);});
+test('cutting at a snapped segment point splits exactly there',()=>{const line=[[0,0],[100,0]],s=G.snapToPaths([{id:'a',part:0,path:line}],[50,7]);const parts=G.split(line,[[50,-20],s.coordinate]);assert.equal(parts.length,2);assert.deepEqual(parts[0].at(-1),s.coordinate);});

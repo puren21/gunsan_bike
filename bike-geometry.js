@@ -69,6 +69,24 @@
     }
     return false;
   }
-  const api={copy,paths,distance,clean,valid,nearest,split,merge,intersectsBox};
+  function snapToPaths(entries,coordinate,project=p=>p,tolerance=12,skip={}) {
+    const cursor=project(coordinate);let vertex=null,segment=null;
+    for(const entry of entries) {
+      const own=entry.id===skip.id&&entry.part===skip.part;
+      if(own&&skip.index===-1)continue;
+      entry.path.forEach((p,index)=>{
+        if(own&&index===skip.index)return;
+        const screen=project(p),d=Math.hypot(screen[0]-cursor[0],screen[1]-cursor[1]);
+        if(d<=tolerance&&(!vertex||d<vertex.distance))vertex={coordinate:[...p],distance:d,kind:'vertex'};
+      });
+      for(let i=1;i<entry.path.length;i++) {
+        if(own&&(i===skip.index||i-1===skip.index))continue;
+        const n=nearest([entry.path[i-1],entry.path[i]],coordinate,project);
+        if(n&&n.distance<=tolerance&&(!segment||n.distance<segment.distance))segment={coordinate:n.coordinate,distance:n.distance,kind:'segment'};
+      }
+    }
+    return vertex||segment;
+  }
+  const api={copy,paths,distance,clean,valid,nearest,split,merge,intersectsBox,snapToPaths};
   root.BikeGeometry=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window==='undefined'?globalThis:window);

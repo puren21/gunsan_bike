@@ -36,3 +36,4 @@
 #bikeEditorPanel .bike-digitizing-tools button svg{display:block;width:24px;height:24px;flex:none;stroke-linecap:round;stroke-linejoin:round}
 #bikeEditorPanel .bike-digitizing-tools button span{display:none}
 #bikeEditorPanel .bike-digitizing-tools button:focus-visible{outline:2px solid #1769aa;outline-offset:1px}
+.bike-snap-target{width:12px;height:12px;border:2px solid #d626a6;border-radius:50%;background:rgba(255,255,255,.65);box-sizing:border-box;pointer-events:none;box-shadow:0 0 0 1px white}
