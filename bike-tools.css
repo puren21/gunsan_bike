@@ -16,3 +16,16 @@
 .top-toolbar.has-bike-tools{padding-right:60px!important;position:fixed!important}.top-toolbar #bikeControls{position:absolute;top:0;right:0}
 .status-style-settings:has(#unexpandedStyle){display:none!important}
 #bikeEditorPanel [hidden]{display:none!important}
+#bikeEditorBtn[aria-pressed=true]{background:#fff0c4;border-color:#d69800;color:#7d5400}
+#bikeEditorPanel{width:365px;top:122px}
+#bikeEditorPanel .bike-digitizing-tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0}
+#bikeEditorPanel .bike-digitizing-tools button{display:flex;align-items:center;justify-content:center;gap:5px;flex-direction:column;padding:7px 3px;font-size:11px}
+#bikeEditorPanel .bike-digitizing-tools b{font-size:20px;line-height:1.1}
+#bikeEditorPanel .bike-digitizing-tools button[aria-pressed=true]{background:#e3efff;border-color:#3980cf;color:#155a99}
+#bikeSessionState{padding:7px 10px;border-radius:6px;background:#fff4ce;color:#755a12;font-size:12px;font-weight:600}
+#bikeEditorPanel .bike-check{display:flex;align-items:center;gap:7px;font-size:12px}#bikeEditorPanel .bike-check input{width:15px;margin:0}
+#bikeSelectionState{font-weight:600;color:#164e7d!important}
+#bikeEditorPanel .bike-save-actions{position:sticky;bottom:-17px;background:white;padding:10px 0;z-index:2}
+#bikeEditorPanel .bike-save-actions button{flex:1;white-space:normal}
+#bikeEditorPanel fieldset:disabled{opacity:.55}
+@media(max-width:700px){#bikeEditorPanel{width:310px;max-height:calc(100dvh - 130px);top:115px}}

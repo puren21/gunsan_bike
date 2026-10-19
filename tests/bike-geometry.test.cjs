@@ -1,0 +1,11 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const G=require('../bike-geometry.js');
+test('cut keeps both sides and an identical shared endpoint',()=>{const p=G.split([[126,36],[126.01,36]],[[126.005,35.99],[126.005,36.01]]);assert.equal(p.length,2);assert.deepEqual(p[0].at(-1),p[1][0]);assert.equal(p[0][0][0],126);assert.equal(p[1].at(-1)[0],126.01);});
+test('cut at an existing vertex creates two, not empty duplicate parts',()=>{const p=G.split([[126,36],[126.005,36],[126.01,36]],[[126.005,35.99],[126.005,36.01]]);assert.equal(p.length,2);assert(p.every(G.valid));});
+test('touching the first endpoint does not split',()=>assert.equal(G.split([[126,36],[126.01,36]],[[126,35.99],[126,36.01]]).length,1));
+test('two intersections make three ordered parts',()=>{const p=G.split([[126,36],[126.02,36]],[[126.005,35.99],[126.005,36.01],[126.015,36.01],[126.015,35.99]]);assert.equal(p.length,3);assert(p.every(G.valid));});
+test('disjoint cutter leaves geometry intact',()=>{const p=[[126,36],[126.01,36]];assert.deepEqual(G.split(p,[[127,35.9],[127,36.1]]),[p]);});
+test('merge handles reversed endpoints without adding a bridge',()=>assert.deepEqual(G.merge([[[126,36],[126.01,36]],[[126.02,36],[126.01,36]]]),[[[126,36],[126.01,36],[126.02,36]]]));
+test('disconnected lines retain separate parts',()=>assert.equal(G.merge([[[126,36],[126.01,36]],[[126.02,36],[126.03,36]]]).length,2));
+test('branching junction is not arbitrarily joined',()=>assert.equal(G.merge([[[126,36],[126.01,36]],[[126.01,36],[126.02,36]],[[126.01,36],[126.01,36.01]]]).length,3));
+test('nearest split location interpolates on line',()=>{const n=G.nearest([[0,0],[10,0]],[4,3]);assert.equal(n.distance,3);assert.deepEqual(n.coordinate,[4,0]);});
+test('geometry operations do not mutate their inputs',()=>{const a=[[[126,36],[126.01,36]],[[126.01,36],[126.02,36]]],before=G.copy(a);G.merge(a);G.split(a[0],[[126.005,35.9],[126.005,36.1]]);assert.deepEqual(a,before);});

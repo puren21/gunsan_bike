@@ -1,216 +1,254 @@
-/* 군산시 자전거도로: 카카오 오버레이와 신규/기존 노선 편집 */
-window.installBikeTools = function (api) {
+/* QGIS-style layer edit session. Public data changes only through explicit GitHub publication. */
+window.installBikeTools = function(api) {
   'use strict';
-  const {map, storage, categories} = api;
-  const esc = api.escape;
-  const root = document.createElement('div');
-  root.id = 'bikeControls';
-  root.innerHTML = '<button id="bikeLayerBtn" type="button" aria-label="카카오 자전거도로 레이어" aria-pressed="false" title="카카오 자전거도로 레이어">🚲</button>' +
-    '<button id="bikeEditorBtn" type="button" aria-label="신규 노선 입력 및 편집" aria-expanded="false">＋<span>노선 입력·편집</span></button>';
-  document.body.append(root);
-  const panel = document.createElement('section');
-  panel.id = 'bikeEditorPanel'; panel.hidden = true;
-  panel.setAttribute('aria-label', '노선 입력 및 편집');
-  panel.innerHTML = '<header><h2>노선 입력·편집</h2><button type="button" id="bikeEditorClose" aria-label="노선 편집 닫기">×</button></header>' +
-    '<label>작업할 노선<select id="bikeRouteSelect"><option value="">＋ 신규 노선</option></select></label>' +
-    '<form id="bikeRouteForm"><label>노선명<input id="bikeRouteName" required maxlength="80" autocomplete="off" placeholder="예: 비응항로2R"></label>' +
-    '<label>자전거도로 구분<select id="bikeRouteCategory">' + categories.map(x => '<option>' + esc(x) + '</option>').join('') + '</select></label>' +
-    '<div class="bike-two"><label>기점<input id="bikeRouteStart" maxlength="200"></label><label>종점<input id="bikeRouteEnd" maxlength="200"></label></div>' +
-    '<label>도로폭 (m)<input id="bikeRouteWidth" type="number" min="0" step="0.1"></label>' +
-    '<label>비고<textarea id="bikeRouteNote" rows="2" maxlength="2000"></textarea></label>' +
-    '<fieldset><legend>노선 선형</legend><label id="bikePartLabel" hidden>편집할 구간<select id="bikePartSelect"></select></label>' +
-    '<div class="bike-actions"><button id="bikeDrawBtn" type="button">지도에서 그리기</button><button id="bikeVertexBtn" type="button">꼭지점 편집</button><button id="bikeDrawFinish" type="button" hidden>그리기 완료</button></div>' +
-    '<div class="bike-actions"><button id="bikeUndoBtn" type="button">마지막 점 취소</button><button id="bikeClearBtn" type="button">선형 다시 그리기</button></div>' +
-    '<p id="bikeGeometryHelp">지도에서 점을 두 개 이상 찍어 새 노선을 그리세요.</p></fieldset>' +
-    '<button class="bike-primary" id="bikeSaveBtn" type="submit">초안 저장</button></form>' +
-    '<p id="bikeEditorMessage" role="status" aria-live="polite"></p>' +
-    '<details><summary>저장 및 사이트 반영</summary><p>초안은 이 브라우저에 저장됩니다. 다른 기기에도 보이게 하려면 GitHub에 반영하세요.</p>' +
-    '<div class="bike-actions"><button id="bikeExportBtn" type="button">GeoJSON 다운로드</button><button id="bikeRestoreBtn" type="button">저장 초안 불러오기</button></div>' +
-    '<button id="bikeDiscardDraftBtn" type="button">초안 삭제·게시된 노선으로 복원</button><label>GitHub 토큰<input id="bikeGithubToken" type="password" autocomplete="off" placeholder="저장소 Contents 쓰기 권한"></label>' +
-    '<button id="bikePublishBtn" type="button">GitHub에 반영</button><p>현재 저장된 전체 노선을 roads.geojson에 반영합니다. 입력 중인 노선은 먼저 초안 저장하세요.</p></details>';
+  const G=window.BikeGeometry, {map,storage,categories}=api, copy=G.copy;
+  const $=id=>document.getElementById(id), esc=api.escape;
+  const root=document.createElement('div');root.id='bikeControls';
+  root.innerHTML='<button id="bikeLayerBtn" type="button" title="카카오 자전거도로 레이어" aria-label="카카오 자전거도로 레이어" aria-pressed="false">🚲</button>'+ '<button id="bikeEditorBtn" type="button" title="편집 모드 켜기" aria-label="편집 모드 켜기" aria-pressed="false">✎<span>편집</span></button>';
+  const toolbar=document.querySelector('.top-toolbar');(toolbar||document.body).append(root);if(toolbar)toolbar.classList.add('has-bike-tools');
+  const panel=document.createElement('section');panel.id='bikeEditorPanel';panel.hidden=true;panel.setAttribute('aria-label','자전거도로 편집');
+  panel.innerHTML='<header><h2>자전거도로 편집</h2><button id="bikeEditorClose" type="button" aria-label="저장하고 편집 종료" title="저장하고 편집 종료">×</button></header>'+ '<div id="bikeSessionState" role="status">편집 모드</div>'+ '<div class="bike-digitizing-tools" role="toolbar" aria-label="라인 편집 도구">'+
+    [['select','↖','선택'],['draw','╱＋','그리기'],['vertex','◇','꼭지점'],['split','✂','자르기'],['multi','▱','다중 선택'],['merge','⋈','병합'],['delete','⌫','삭제'],['undo','↶','실행 취소'],['redo','↷','다시 실행']].map(([id,icon,label])=>'<button id="bikeTool-'+id+'" type="button" title="'+label+'" aria-label="'+label+'"><b aria-hidden="true">'+icon+'</b><span>'+label+'</span></button>').join('')+'</div>'+ '<div class="bike-actions"><button id="bikeFinishBtn" type="button" hidden>그리기 완료</button><button id="bikeCancelToolBtn" type="button" hidden>도구 취소</button></div>'+ '<p id="bikeGeometryHelp">지도에서 편집할 라인을 클릭하세요.</p>'+ '<label class="bike-check"><input id="bikeSnapCheck" type="checkbox" checked> 끝점 스냅 (12px)</label>'+ '<p id="bikeSelectionState">선택한 라인 없음</p>'+ '<label>라인 목록<select id="bikeRouteSelect"><option value="">지도에서 라인을 선택하세요</option></select></label>'+ '<form id="bikeRouteForm"><fieldset id="bikeAttributes" disabled><legend>선택한 라인의 속성</legend>'+ '<label>노선명<input id="bikeRouteName" required maxlength="80" placeholder="노선명"></label>'+ '<label>자전거도로 구분<select id="bikeRouteCategory">'+categories.map(x=>'<option>'+esc(x)+'</option>').join('')+'</select></label>'+ '<div class="bike-two"><label>기점<input id="bikeRouteStart" maxlength="200"></label><label>종점<input id="bikeRouteEnd" maxlength="200"></label></div>'+ '<label>도로폭 (m)<input id="bikeRouteWidth" type="number" min="0" step="0.1"></label>'+ '<label>비고<textarea id="bikeRouteNote" rows="2" maxlength="2000"></textarea></label>'+ '<label id="bikePartLabel" hidden>편집할 부분<select id="bikePartSelect"></select></label></fieldset>'+ '<div class="bike-actions bike-save-actions"><button class="bike-primary" id="bikeSaveBtn" type="submit">저장</button><button id="bikeStopBtn" type="button">저장 후 편집 끄기</button></div></form>'+ '<p id="bikeEditorMessage" role="status" aria-live="polite"></p>'+ '<details><summary>저장 위치 및 사이트 반영</summary><p>저장과 편집 종료 시 도형·속성을 이 브라우저에 함께 저장합니다. 전체 사이트 반영은 아래 GitHub 버튼을 사용하세요.</p>'+ '<div class="bike-actions"><button id="bikeExportBtn" type="button">GeoJSON 다운로드</button><button id="bikeRestoreBtn" type="button">저장본 불러오기</button></div>'+ '<button id="bikeDiscardDraftBtn" type="button">초안 삭제·게시된 노선으로 복원</button>'+ '<label>GitHub 토큰<input id="bikeGithubToken" type="password" autocomplete="off" placeholder="저장소 Contents 쓰기 권한"></label>'+ '<button id="bikePublishBtn" type="button">저장 후 GitHub에 반영</button><p>게시된 전체 노선을 교체합니다. 병합은 첫 선택 라인의 속성을 사용하며 떨어진 구간은 연결선을 만들지 않고 여러 부분으로 유지합니다.</p></details>';
   document.body.append(panel);
-  const $ = id => document.getElementById(id);
-  const msg = (text, error = false) => { $('bikeEditorMessage').textContent = text; $('bikeEditorMessage').classList.toggle('error', error); };
-  let layerEnabled = false;
-  function syncOverlay() {
-    map.removeOverlayMapTypeId(kakao.maps.MapTypeId.BICYCLE);
-    map.removeOverlayMapTypeId(kakao.maps.MapTypeId.BICYCLE_HYBRID);
-    if (layerEnabled) map.addOverlayMapTypeId(map.getMapTypeId() === kakao.maps.MapTypeId.ROADMAP ? kakao.maps.MapTypeId.BICYCLE : kakao.maps.MapTypeId.BICYCLE_HYBRID);
+  let editing=false,ready=false,busy=false,dirty=false,attrDirty=false,activeId=null,part=0,mode='select';
+  let dataset={type:'FeatureCollection',features:[]},serverDataset=null,baseline='',savedDataset=null;
+  let selected=new Set(),undoStack=[],redoStack=[],overlays=[],markers=[],capture=[],shift=false,lastSaved='';
+  const msg=(text,error=false)=>{ $('bikeEditorMessage').textContent=text;$('bikeEditorMessage').classList.toggle('error',error); };
+  const nameOf=f=>String(f.properties.number||f.properties['자전도로명']||f.properties['자전거도로명']||f.properties.NUM||'');
+  const idOf=f=>f.properties.__bike_id;
+  const uid=()=> 'bike-'+(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
+  const active=()=>dataset.features.find(f=>idOf(f)===activeId);
+  const coord=p=>[Number(p.getLng().toFixed(8)),Number(p.getLat().toFixed(8))];
+  const point=c=>new kakao.maps.LatLng(c[1],c[0]);
+  const project=c=>{const p=map.getProjection().containerPointFromCoords(point(c));return [p.x,p.y];};
+  function fingerprint(data) {let hash=2166136261;for(const c of JSON.stringify(data))hash=Math.imul(hash^c.charCodeAt(0),16777619);return(hash>>>0).toString(16);}
+  function normalize(data) {
+    const result=[],byId=new Map();
+    data.features.forEach((raw,i)=>{
+      const f=copy(raw);f.properties=f.properties||{};
+      const id=f.properties.__bike_id||'bike-source-'+i;f.properties.__bike_id=id;
+      if(byId.has(id)) {
+        const existing=byId.get(id),parts=G.paths(existing).concat(G.paths(f));
+        existing.geometry={type:'MultiLineString',coordinates:parts};
+      } else {byId.set(id,f);result.push(f);}
+    });
+    return{type:'FeatureCollection',features:result};
   }
-  $('bikeLayerBtn').onclick = () => {
-    layerEnabled = !layerEnabled;
-    $('bikeLayerBtn').setAttribute('aria-pressed', String(layerEnabled));
-    syncOverlay();
-  };
-  kakao.maps.event.addListener(map, 'maptypeid_changed', syncOverlay);
-  const toolbar = document.querySelector('.top-toolbar');
-  if (toolbar) {toolbar.append(root);toolbar.classList.add('has-bike-tools');}
-  let dataReady = false, selected = '', features = [], paths = [], part = 0;
-  let dirty = false, geometryDirty = false, drawing = false, vertices = false, markers = [];
-  let baseline = '', restoring = false, serverDataset = null;
-  const preview = new kakao.maps.Polyline({strokeColor:'#E60045', strokeWeight:5, strokeOpacity:0.95, zIndex:1000});
-  const point = c => new kakao.maps.LatLng(c[1], c[0]);
-  const coord = p => [Number(p.getLng().toFixed(8)), Number(p.getLat().toFixed(8))];
-  const nameOf = f => String(f.properties.number || f.properties['자전도로명'] || f.properties['자전거도로명'] || f.properties.NUM || '');
-  function fingerprint(data) { let h = 2166136261; for (const ch of JSON.stringify(data)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return (h >>> 0).toString(16); }
-  function names() { return [...new Set(api.read().features.map(nameOf))]; }
-  function fillRoutes(value = selected) {
-    const select = $('bikeRouteSelect'); select.replaceChildren(new Option('＋ 신규 노선', ''));
-    names().sort((a,b) => a.localeCompare(b,'ko')).forEach(name => select.add(new Option(name,name)));
-    select.value = value;
+  function captureState() {return{dataset:copy(dataset),ids:[...selected],activeId,part};}
+  function checkpoint() {undoStack.push(captureState());if(undoStack.length>80)undoStack.shift();redoStack=[];}
+  function loadState(state) {dataset=state.dataset;selected=new Set(state.ids);activeId=state.activeId;part=state.part;dirty=true;attrDirty=false;setMode('select');fillRoutes();loadAttributes();paint();}
+  function formValues() {
+    const name=$('bikeRouteName').value.trim();if(!name)throw Error('노선명을 입력하세요.');
+    const width=$('bikeRouteWidth').value;if(width!==''&&(!Number.isFinite(Number(width))||Number(width)<0))throw Error('도로폭은 0 이상의 숫자여야 합니다.');
+    return{number:name,'자전도로명':name,'구분':$('bikeRouteCategory').value,GUBUN:$('bikeRouteCategory').value,'자전거도로':$('bikeRouteCategory').value,'기점':$('bikeRouteStart').value,'시점':$('bikeRouteStart').value,'종점':$('bikeRouteEnd').value,'도로폭':width,'비고':$('bikeRouteNote').value,'특이사항':$('bikeRouteNote').value};
   }
-  function hideMarkers() { markers.forEach(m => m.setMap(null)); markers = []; }
-  function stopDrawing() { drawing = false; vertices = false; map.setCursor(''); $('bikeDrawFinish').hidden = true; hideMarkers(); }
+  function commitAttributes() {
+    if(!attrDirty)return true;const f=active();if(!f)return true;
+    let values;try{values=formValues();}catch(e){msg(e.message,true);return false;}
+    checkpoint();Object.assign(f.properties,values);delete f.properties['개설여부'];attrDirty=false;dirty=true;return true;
+  }
+  function fillRoutes() {
+    const select=$('bikeRouteSelect');select.replaceChildren(new Option('지도에서 라인을 선택하세요',''));
+    const counts=new Map();dataset.features.forEach(f=>counts.set(nameOf(f),(counts.get(nameOf(f))||0)+1));
+    const indexes=new Map();dataset.features.forEach(f=>{
+      const name=nameOf(f),i=(indexes.get(name)||0)+1;indexes.set(name,i);
+      select.add(new Option(name+(counts.get(name)>1?' · 라인 '+i:''),idOf(f)));
+    });select.value=activeId||'';
+  }
+  function loadAttributes() {
+    const f=active(),p=f?f.properties:{};$('bikeAttributes').disabled=!f;
+    $('bikeRouteName').value=f?nameOf(f):'';$('bikeRouteCategory').value=api.normalizeCategory(p['구분']||p.GUBUN||p['자전거도로']);
+    $('bikeRouteStart').value=p['기점']||p['시점']||'';$('bikeRouteEnd').value=p['종점']||'';
+    $('bikeRouteWidth').value=p['도로폭']||'';$('bikeRouteNote').value=p['비고']||p['특이사항']||'';
+    const parts=f?G.paths(f):[];part=Math.max(0,Math.min(part,parts.length-1));
+    $('bikePartSelect').replaceChildren(...parts.map((p,i)=>new Option('부분 '+(i+1),String(i))));$('bikePartSelect').value=String(part);$('bikePartLabel').hidden=parts.length<2;
+    $('bikeRouteSelect').value=activeId||'';attrDirty=false;updateUI();
+  }
+  function updateUI() {
+    $('bikeSessionState').textContent=busy?'저장 중…':dirty||attrDirty?'편집 중 · 저장하지 않은 변경 있음':lastSaved?'저장됨 · 이 브라우저 ('+lastSaved+')':'편집 중 · 변경 없음';
+    $('bikeSelectionState').textContent=selected.size?selected.size+'개 라인 선택'+(active()?' · '+nameOf(active()):''):'선택한 라인 없음';
+    for(const tool of ['select','draw','vertex','split','multi'])$('bikeTool-'+tool).setAttribute('aria-pressed',String(mode===tool));
+    $('bikeTool-vertex').disabled=!activeId;$('bikeTool-split').disabled=!selected.size;$('bikeTool-merge').disabled=selected.size<2;$('bikeTool-delete').disabled=!selected.size;
+    $('bikeTool-undo').disabled=!undoStack.length&&!attrDirty;$('bikeTool-redo').disabled=!redoStack.length;
+    for(const id of ['bikeSaveBtn','bikeStopBtn','bikePublishBtn','bikeEditorClose','bikeEditorBtn'])$(id).disabled=busy;
+    const text={select:'지도에서 라인을 클릭해 선택하세요. Shift를 누르거나 다중 선택 도구로 여러 라인을 선택합니다.',multi:'병합할 라인을 차례로 클릭하세요. 다시 클릭하면 선택 해제됩니다. 병합 도구는 2개 이상 선택하면 활성화됩니다.',draw:'지도 클릭: 점 추가 · 우클릭 또는 그리기 완료: 라인 생성 · Esc: 취소',vertex:'꼭지점 드래그: 이동 · 선 위 클릭: 점 추가 · 꼭지점 우클릭: 삭제 · 끝점 스냅 지원',split:'선택한 라인을 가로지르는 절단선을 클릭해 그린 뒤 우클릭 또는 자르기 실행을 누르세요.'};
+    $('bikeGeometryHelp').textContent=text[mode]||text.select;$('bikeFinishBtn').hidden=!['draw','split'].includes(mode);$('bikeCancelToolBtn').hidden=!['draw','split','vertex'].includes(mode);$('bikeFinishBtn').textContent=mode==='split'?'자르기 실행':'그리기 완료';
+  }
+  function removeOverlays() {overlays.forEach(s=>s.setMap(null));overlays=[];markers.forEach(m=>m.setMap(null));markers=[];}
+  const palette=['#77B959','#E7725A','#8896F8','#CDAD5A','#9762CB','#75808A'];
+  function line(path,options={}) {
+    const obj=new kakao.maps.Polyline({map,path:path.map(point),strokeColor:'#E60045',strokeWeight:5,zIndex:900,...options});overlays.push(obj);return obj;
+  }
   function paint() {
-    hideMarkers();
-    const path = paths[part] || [];
-    preview.setPath(path.map(point)); preview.setMap(path.length ? map : null);
-    if (vertices) path.forEach((c,i) => {
-      const marker = new kakao.maps.Marker({position:point(c), map, draggable:true, zIndex:1100, title:'꼭지점 ' + (i+1) + ' (우클릭: 삭제)'});
-      kakao.maps.event.addListener(marker,'dragend', () => { path[i] = coord(marker.getPosition()); dirty = geometryDirty = true; paint(); });
-      kakao.maps.event.addListener(marker,'rightclick', () => {
-        if(path.length <= 2) {msg('노선은 점이 두 개 이상 필요합니다.',true);return;}
-        path.splice(i,1); dirty = geometryDirty = true; paint();
+    removeOverlays();if(!editing)return;
+    dataset.features.forEach(f=>{
+      const picked=selected.has(idOf(f)),color=picked?'#F8A900':palette[categories.indexOf(api.normalizeCategory(f.properties['구분']||f.properties.GUBUN||f.properties['자전거도로']))];
+      G.paths(f).forEach((path,partIndex)=>{
+        if(picked)line(path,{strokeColor:'#FFFFFF',strokeWeight:9,zIndex:902});
+        line(path,{strokeColor:color,strokeWeight:picked?5:4,zIndex:picked?903:900});
+        const hit=line(path,{strokeColor:'#000000',strokeOpacity:0.01,strokeWeight:14,zIndex:905});
+        kakao.maps.event.addListener(hit,'click',e=>{kakao.maps.event.preventMap();dispatchClick(coord(e.latLng),idOf(f),partIndex);});
+        kakao.maps.event.addListener(hit,'rightclick',()=>{kakao.maps.event.preventMap();finishCapture();});
       });
-      markers.push(marker);
     });
-    $('bikeGeometryHelp').textContent = drawing ? '지도 클릭: 점 추가 · 완료 버튼: 그리기 종료 · 마지막 점 취소로 되돌리기' :
-      vertices ? '꼭지점을 끌어 이동하거나 우클릭해 삭제하세요. 지도 클릭으로 가장 가까운 선분에 점을 추가합니다.' :
-      paths.length ? (part+1) + '번 구간 · ' + path.length + '개 점. 속성만 저장하면 모든 구간 선형을 유지합니다.' : '지도에서 점을 두 개 이상 찍어 새 노선을 그리세요.';
-  }
-  function loadRoute(name) {
-    stopDrawing(); selected = name; part = 0;
-    features = api.read().features.filter(f => nameOf(f) === name);
-    paths = features.flatMap(f => f.geometry.type === 'MultiLineString' ? f.geometry.coordinates : [f.geometry.coordinates]).map(p => p.map(c => [...c]));
-    const props = features[0] ? features[0].properties : {};
-    $('bikeRouteName').value = name;
-    $('bikeRouteCategory').value = api.normalizeCategory(props['구분'] || props.GUBUN || props['자전거도로']);
-    if (!name) $('bikeRouteCategory').value = categories[0];
-    $('bikeRouteStart').value = props['기점'] || props['시점'] || '';
-    $('bikeRouteEnd').value = props['종점'] || '';
-    $('bikeRouteWidth').value = props['도로폭'] || '';
-    $('bikeRouteNote').value = props['비고'] || props['특이사항'] || '';
-    $('bikePartSelect').replaceChildren(...paths.map((p,i) => new Option('구간 ' + (i+1),String(i))));
-    $('bikePartLabel').hidden = paths.length < 2;
-    dirty = geometryDirty = false;
-    if (name) api.showRoute(name);
-    paint();
-  }
-  function mayDiscard() { return !dirty || confirm('저장하지 않은 입력을 버리고 이동할까요?'); }
-  $('bikeRouteSelect').onchange = e => {
-    if (!mayDiscard()) {e.target.value = selected;return;}
-    loadRoute(e.target.value); msg('');
-  };
-  $('bikePartSelect').onchange = e => {stopDrawing();part = Number(e.target.value);paint();};
-  $('bikeRouteForm').addEventListener('input', () => {dirty = true;});
-  $('bikeDrawBtn').onclick = () => {
-    api.stopOtherTools();
-    if (!paths.length) {paths = [[]];part=0;}
-    if (paths[part].length && !confirm('선택한 구간을 새로 그릴까요? 기존 선형은 초안 저장 전까지 유지됩니다.')) return;
-    paths[part] = []; drawing = true; vertices = false; dirty = geometryDirty = true;
-    $('bikeDrawFinish').hidden = false; map.setCursor('crosshair');paint();
-  };
-  $('bikeVertexBtn').onclick = () => {
-    if (!paths.length || paths[part].length < 2) {msg('먼저 선형을 그리거나 기존 노선을 선택하세요.',true);return;}
-    api.stopOtherTools(); drawing=false;vertices=!vertices; $('bikeDrawFinish').hidden=true; map.setCursor(vertices ? 'crosshair' : '');paint();
-  };
-  $('bikeDrawFinish').onclick = () => {stopDrawing();paint();};
-  $('bikeUndoBtn').onclick = () => {if (paths[part] && paths[part].length) {paths[part].pop();dirty=geometryDirty=true;paint();}};
-  $('bikeClearBtn').onclick = () => $('bikeDrawBtn').click();
-  kakao.maps.event.addListener(map,'click', event => {
-    if (!drawing && !vertices) return;
-    const path = paths[part]; const c = coord(event.latLng);
-    if (drawing) path.push(c);
-    else {
-      // Insert into the nearest segment, preserving the order of the polyline.
-      let best=Infinity, insert=1;
-      for(let i=1;i<path.length;i++) {
-        const a=path[i-1], b=path[i], scale=Math.cos(c[1]*Math.PI/180), dx=(b[0]-a[0])*scale, dy=b[1]-a[1];
-        const t=Math.max(0,Math.min(1,(((c[0]-a[0])*scale)*dx+(c[1]-a[1])*dy)/(dx*dx+dy*dy||1)));
-        const d=((c[0]-a[0])*scale-t*dx)**2+(c[1]-a[1]-t*dy)**2;
-        if(d<best) {best=d;insert=i;}
-      }
-      path.splice(insert,0,c);
+    if(capture.length)line(capture,{strokeColor:mode==='split'?'#D72973':'#1676D2',strokeWeight:4,strokeStyle:'dash',zIndex:920});
+    const f=active();if(mode==='vertex'&&f) {
+      (G.paths(f)[part]||[]).forEach((c,i)=>{
+        const svg='<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"><rect x="2" y="2" width="10" height="10" fill="white" stroke="#e55b00" stroke-width="2"/></svg>';
+        const image=new kakao.maps.MarkerImage('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg),new kakao.maps.Size(14,14));
+        const marker=new kakao.maps.Marker({map,position:point(c),image,draggable:true,zIndex:950,title:'꼭지점 '+(i+1)+' · 드래그 이동 / 우클릭 삭제'});
+        let dragAllowed=false;
+        kakao.maps.event.addListener(marker,'dragstart',()=>{dragAllowed=commitAttributes();if(dragAllowed)checkpoint();});
+        kakao.maps.event.addListener(marker,'dragend',()=>{
+          if(!dragAllowed){paint();return;}
+          const path=G.paths(f)[part],next=snap(coord(marker.getPosition()),idOf(f),part,i);
+          const proposal=copy(path);proposal[i]=next;
+          if(G.valid(proposal)) {path[i]=next;dirty=true;}else {undoStack.pop();msg('길이가 없는 라인으로 바꿀 수 없습니다.',true);}
+          paint();updateUI();
+        });
+        kakao.maps.event.addListener(marker,'rightclick',()=>{
+          kakao.maps.event.preventMap();const path=G.paths(f)[part];
+          if(path.length<=2) {msg('라인에는 서로 다른 점이 두 개 이상 필요합니다.',true);return;}
+          const proposal=copy(path);proposal.splice(i,1);if(!G.valid(proposal)){msg('길이가 없는 라인으로 바꿀 수 없습니다.',true);return;}
+          if(!commitAttributes())return;checkpoint();path.splice(i,1);dirty=true;paint();updateUI();
+        });markers.push(marker);
+      });
     }
-    dirty=geometryDirty=true;paint();
-  });
-  function snapshot() {
-    const dataset = api.read();
-    storage.setItem('bike-draft-v2', JSON.stringify({base:baseline, dataset, updated:new Date().toISOString()}));
-    return dataset;
+    updateUI();
   }
-  $('bikeRouteForm').onsubmit = async event => {
-    event.preventDefault(); if (!dataReady) return;
-    const name = $('bikeRouteName').value.trim();
-    if (!name) {msg('노선명을 입력하세요.',true);return;}
-    const dataset = api.read();
-    if (name !== selected && dataset.features.some(f => nameOf(f) === name)) {msg('같은 노선명이 있습니다. 다른 이름을 입력하세요.',true);return;}
-    if (!paths.length || paths.some(p => p.length < 2 || !p.some(c => c[0] !== p[0][0] || c[1] !== p[0][1]))) {msg('각 구간에 서로 다른 점이 두 개 이상 필요합니다.',true);return;}
-    const category = $('bikeRouteCategory').value;
-    const updates = {number:name,'자전도로명':name,'구분':category,GUBUN:category,'자전거도로':category,
-      '기점':$('bikeRouteStart').value,'시점':$('bikeRouteStart').value,'종점':$('bikeRouteEnd').value,
-      '도로폭':$('bikeRouteWidth').value,'비고':$('bikeRouteNote').value,'특이사항':$('bikeRouteNote').value};
-    const replaced = paths.map((path,i) => {
-      const props = Object.assign({},features[i] ? features[i].properties : {},updates);
-      delete props['개설여부'];delete props.Opened;delete props.Opend;
-      return {type:'Feature',properties:props,geometry:{type:'LineString',coordinates:path}};
-    });
-    const next={type:'FeatureCollection',features:dataset.features.filter(f => !selected || nameOf(f)!==selected).concat(replaced)};
-    const save = $('bikeSaveBtn');save.disabled=true;
-    try {
-      // Persist first: if browser storage is unavailable, do not silently lose changes.
-      storage.setItem('bike-draft-v2',JSON.stringify({base:baseline,dataset:next,updated:new Date().toISOString()}));
-      stopDrawing(); await api.replace(next); snapshot(); fillRoutes(name);loadRoute(name);
-      msg('초안을 저장했습니다. 사이트 전체에 적용하려면 아래에서 GitHub에 반영하세요.');
-    } catch(error) {msg('저장 실패: '+error.message,true);}
-    finally {save.disabled=false;}
-  };
-  async function restoreDraft() {
-    const saved=JSON.parse(storage.getItem('bike-draft-v2') || 'null');
-    if (!saved) {msg('저장된 초안이 없습니다.');return;}
-    if(saved.base!==baseline && !confirm('사이트의 노선이 초안 작성 이후 변경됐습니다. 저장된 초안으로 이 브라우저 화면을 바꿀까요?')) return;
-    if (!mayDiscard()) return;
-    restoring=true;
-    try {await api.replace(saved.dataset);fillRoutes('');loadRoute('');msg('저장된 초안을 불러왔습니다.');}
-    catch(e) {msg('초안 불러오기 실패: '+e.message,true);}
-    finally {restoring=false;}
+  function snap(c,skipId=null,skipPart=-1,skipIndex=-1) {
+    if(!$('bikeSnapCheck').checked)return c;const p=project(c);let best=12,result=c;
+    dataset.features.forEach(f=>G.paths(f).forEach((path,j)=>[0,path.length-1].forEach(i=>{
+      if(idOf(f)===skipId&&j===skipPart&&i===skipIndex)return;
+      const q=project(path[i]),d=Math.hypot(q[0]-p[0],q[1]-p[1]);if(d<best){best=d;result=[...path[i]];}
+    })));return result;
   }
-  $('bikeRestoreBtn').onclick=restoreDraft;
-  $('bikeDiscardDraftBtn').onclick=async () => {
-    if(!confirm('이 브라우저의 초안과 입력 중인 내용을 삭제하고 게시된 노선으로 복원할까요?')) return;
+  function setMode(next) {mode=next;capture=[];map.setCursor(['draw','split','vertex'].includes(mode)?'crosshair':'');updateUI();paint();}
+  function selectFeature(id,multi=false,partIndex=0) {
+    if(!commitAttributes())return;
+    if(multi){if(selected.has(id))selected.delete(id);else selected.add(id);}else selected=new Set([id]);
+    activeId=selected.has(id)?id:[...selected][0]||null;part=partIndex;loadAttributes();paint();
+  }
+  function dispatchClick(c,id=null,partIndex=0) {
+    if(!editing||busy)return;
+    if(mode==='draw'||mode==='split') {capture.push(mode==='draw'?snap(c):c);paint();return;}
+    if(mode==='vertex') {
+      const f=active();if(!f)return;const path=G.paths(f)[part],near=G.nearest(path,c,project);
+      if(!near||near.distance>18){msg('선택한 라인 가까이를 클릭해 꼭지점을 추가하세요.',true);return;}
+      if(near.t<0.00001||near.t>0.99999)return;
+      if(!commitAttributes())return;checkpoint();path.splice(near.index,0,near.coordinate);dirty=true;paint();return;
+    }
+    if(!id) {
+      let nearest=null;dataset.features.forEach(f=>G.paths(f).forEach((path,j)=>{const n=G.nearest(path,c,project);if(n&&n.distance<=14&&(!nearest||n.distance<nearest.distance))nearest={id:idOf(f),part:j,distance:n.distance};}));
+      if(nearest){id=nearest.id;partIndex=nearest.part;}
+    }
+    if(id)selectFeature(id,mode==='multi'||shift,partIndex);
+  }
+  function finishCapture() {
+    if(!editing||!['draw','split'].includes(mode))return true;
+    if(capture.length<2){msg('서로 다른 점을 두 개 이상 찍으세요. Esc를 누르면 취소됩니다.',true);return false;}
+    if(!commitAttributes())return false;
+    if(mode==='draw') {
+      const path=G.clean(capture);if(!G.valid(path)){msg('길이가 있는 라인을 그리세요.',true);return false;}
+      checkpoint();const id=uid(),name='신규 노선 '+(dataset.features.length+1);
+      dataset.features.push({type:'Feature',properties:{__bike_id:id,number:name,'자전도로명':name,'구분':categories[0],'자전거도로':categories[0]},geometry:{type:'LineString',coordinates:path}});
+      selected=new Set([id]);activeId=id;part=0;dirty=true;setMode('vertex');fillRoutes();loadAttributes();paint();msg('라인을 그렸습니다. 속성을 입력하고 저장하세요.');return true;
+    }
+    const replacements=[];let cutCount=0;
+    for(const f of dataset.features) {
+      if(!selected.has(idOf(f))){replacements.push(f);continue;}
+      const parts=G.paths(f),pieces=parts.flatMap(path=>G.split(path,capture));
+      if(pieces.length===parts.length){replacements.push(f);continue;}
+      cutCount++;pieces.forEach((path,i)=>{const p=copy(f.properties);p.__bike_id=i?uid():idOf(f);replacements.push({type:'Feature',properties:p,geometry:{type:'LineString',coordinates:path}});});
+    }
+    if(!cutCount){msg('선택한 라인을 가로지르지 않았습니다. 절단선을 다시 그리거나 Esc로 취소하세요.',true);return false;}
+    checkpoint();const oldIds=new Set(selected);dataset.features=replacements;
+    // Keep the original line selected; split pieces retain all original attributes and distinct IDs.
+    selected=new Set([...oldIds].filter(id=>dataset.features.some(f=>idOf(f)===id)));activeId=[...selected][0]||null;part=0;dirty=true;setMode('select');fillRoutes();loadAttributes();paint();msg(cutCount+'개 라인을 잘랐습니다. 저장 전까지 실행 취소할 수 있습니다.');return true;
+  }
+  function mergeSelected() {
+    if(selected.size<2||!commitAttributes())return;
+    const chosen=[...selected].map(id=>dataset.features.find(f=>idOf(f)===id)).filter(Boolean);
+    const parts=G.merge(chosen.flatMap(G.paths));
+    if(!parts.every(G.valid)){msg('유효하지 않은 선형은 병합할 수 없습니다.',true);return;}
+    checkpoint();const merged={type:'Feature',properties:copy(chosen[0].properties),geometry:parts.length===1?{type:'LineString',coordinates:parts[0]}:{type:'MultiLineString',coordinates:parts}};
+    dataset.features=dataset.features.filter(f=>!selected.has(idOf(f))).concat(merged);activeId=idOf(merged);selected=new Set([activeId]);part=0;dirty=true;setMode('select');fillRoutes();loadAttributes();paint();msg('병합했습니다. 첫 선택 라인의 속성을 사용합니다.'+(parts.length>1?' 떨어진 구간은 '+parts.length+'개 부분으로 유지했습니다.':''));
+  }
+  function deleteSelected() {if(!selected.size||!commitAttributes())return;checkpoint();dataset.features=dataset.features.filter(f=>!selected.has(idOf(f)));selected.clear();activeId=null;dirty=true;setMode('select');fillRoutes();loadAttributes();paint();msg('선택 라인을 삭제했습니다. 실행 취소로 복원할 수 있습니다.');}
+  function undo() {if(!commitAttributes()||!undoStack.length)return;redoStack.push(captureState());loadState(undoStack.pop());msg('실행을 취소했습니다.');}
+  function redo() {if(attrDirty&&!commitAttributes())return;if(!redoStack.length)return;undoStack.push(captureState());loadState(redoStack.pop());msg('다시 실행했습니다.');}
+  function prepareData() {
+    const next=copy(dataset);next.features.forEach(f=>{
+      if(!G.paths(f).every(G.valid))throw Error('길이가 없거나 올바르지 않은 라인이 있습니다.');
+      if(!nameOf(f).trim())throw Error('노선명이 없는 라인이 있습니다.');
+      delete f.properties['개설여부'];delete f.properties.Opened;delete f.properties.Opend;
+      const km=G.paths(f).reduce((sum,path)=>sum+path.slice(1).reduce((s,p,i)=>s+G.distance(path[i],p),0),0)/1000;
+      f.properties['연장']=String(Math.round(km*1000)/1000);
+    });return next;
+  }
+  async function save(stop=false) {
+    if(busy||!ready)return false;
+    if(['draw','split'].includes(mode)&&capture.length&&!finishCapture())return false;
+    if(!commitAttributes())return false;
+    busy=true;updateUI();
     try {
-      stopDrawing();dirty=false;restoring=true;
-      storage.removeItem('bike-draft-v2');
-      await api.replace(JSON.parse(JSON.stringify(serverDataset)));
-      fillRoutes('');loadRoute('');msg('게시된 노선으로 복원했습니다.');
-    } catch(e) {msg(e.message,true);} finally {restoring=false;}
+      const next=prepareData();
+      // Durable write first. A quota failure leaves edit mode and input intact.
+      storage.setItem('bike-draft-v3',JSON.stringify({base:baseline,dataset:next,updated:new Date().toISOString()}));
+      await api.replace(copy(next));dataset=next;savedDataset=copy(next);dirty=attrDirty=false;undoStack=[];redoStack=[];
+      lastSaved=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});fillRoutes();loadAttributes();
+      if(stop){editing=false;panel.hidden=true;api.setEditing(false);removeOverlays();map.setCursor('');$('bikeEditorBtn').setAttribute('aria-pressed','false');$('bikeEditorBtn').setAttribute('aria-label','편집 모드 켜기');$('bikeEditorBtn').title='편집 모드 켜기';}
+      else {setMode('select');paint();}
+      msg('도형과 속성을 함께 저장했습니다. 저장 위치: 이 브라우저.');return true;
+    }catch(e){msg('저장하지 못했습니다: '+e.message,true);return false;}
+    finally{busy=false;updateUI();}
+  }
+  function start() {
+    if(!ready||busy)return;editing=true;api.stopOtherTools();api.setEditing(true);panel.hidden=false;
+    $('bikeEditorBtn').setAttribute('aria-pressed','true');$('bikeEditorBtn').setAttribute('aria-label','저장 후 편집 끄기');$('bikeEditorBtn').title='저장 후 편집 끄기';setMode('select');fillRoutes();loadAttributes();paint();msg('편집할 라인을 지도에서 클릭하세요.');
+  }
+  window.bikeEditor={get active(){return editing;},start,
+    selectFromRoute(name,index=0){if(!editing)start();const candidates=dataset.features.filter(f=>nameOf(f)===name);if(candidates.length)selectFeature(idOf(candidates[Math.min(index,candidates.length-1)]));}
   };
-  $('bikeExportBtn').onclick=() => {
-    const blob=new Blob([JSON.stringify(api.read(),null,2)],{type:'application/geo+json'});
-    const url=URL.createObjectURL(blob), a=document.createElement('a');a.href=url;a.download='gunsan_bike_roads.geojson';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  $('bikeEditorBtn').onclick=()=>editing?save(true):start();$('bikeEditorClose').onclick=()=>save(true);$('bikeStopBtn').onclick=()=>save(true);
+  $('bikeRouteForm').onsubmit=e=>{e.preventDefault();save();};$('bikeAttributes').addEventListener('input',()=>{attrDirty=true;updateUI();});
+  $('bikeRouteSelect').onchange=e=>{if(e.target.value)selectFeature(e.target.value);};$('bikePartSelect').onchange=e=>{if(commitAttributes()){part=Number(e.target.value);setMode('vertex');}};
+  ['select','draw','vertex','split','multi'].forEach(tool=>$('bikeTool-'+tool).onclick=()=>{if(commitAttributes())setMode(tool);});
+  $('bikeTool-merge').onclick=mergeSelected;$('bikeTool-delete').onclick=deleteSelected;$('bikeTool-undo').onclick=undo;$('bikeTool-redo').onclick=redo;
+  $('bikeFinishBtn').onclick=finishCapture;$('bikeCancelToolBtn').onclick=()=>setMode('select');
+  kakao.maps.event.addListener(map,'click',e=>dispatchClick(coord(e.latLng)));
+  kakao.maps.event.addListener(map,'rightclick',()=>{if(editing&&['draw','split'].includes(mode))finishCapture();});
+  window.addEventListener('keydown',e=>{
+    shift=e.shiftKey||e.ctrlKey||e.metaKey;if(!editing||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||busy)return;
+    if(e.key==='Escape'){e.preventDefault();setMode('select');}
+    else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}
+    else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();save();}
+    else if(e.key==='Delete'){e.preventDefault();deleteSelected();}
+  });window.addEventListener('keyup',e=>{shift=e.shiftKey||e.ctrlKey||e.metaKey;});window.addEventListener('blur',()=>{shift=false;});
+  window.addEventListener('beforeunload',e=>{if(dirty||attrDirty||capture.length){e.preventDefault();e.returnValue='';}});
+  $('bikeExportBtn').onclick=()=>{
+    if(!commitAttributes())return;try{const data=prepareData(),url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/geo+json'})),a=document.createElement('a');a.href=url;a.download='gunsan_bike_roads.geojson';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){msg(e.message,true);}
   };
-  $('bikePublishBtn').onclick=async () => {
-    if(dirty) {msg('입력 중인 내용을 먼저 초안 저장하세요.',true);return;}
-    const token=$('bikeGithubToken').value.trim() || api.token();
-    if(!token) {msg('GitHub 토큰을 입력하거나 도로목록의 GitHub 저장 설정에서 연결하세요.',true);return;}
-    const button=$('bikePublishBtn');button.disabled=true;msg('GitHub에 반영 중입니다…');
-    try {await api.publish(api.read(),token);serverDataset=JSON.parse(JSON.stringify(api.read()));baseline=fingerprint(serverDataset);storage.removeItem('bike-draft-v2');$('bikeGithubToken').value='';msg('GitHub에 반영했습니다. Pages 배포 후 다른 기기에서도 표시됩니다.');}
-    catch(e) {msg('GitHub 반영 실패: '+e.message,true);}
-    finally {button.disabled=false;}
+  $('bikeRestoreBtn').onclick=async()=>{
+    if((dirty||attrDirty)&&!confirm('저장하지 않은 편집을 버리고 마지막 저장본을 불러올까요?'))return;
+    dataset=copy(savedDataset);selected.clear();activeId=null;dirty=attrDirty=false;undoStack=[];redoStack=[];setMode('select');fillRoutes();loadAttributes();paint();msg('마지막 저장본을 불러왔습니다.');
   };
-  $('bikeEditorBtn').onclick=() => {
-    if (!dataReady) {msg('도로 데이터를 불러오는 중입니다.');return;}
-    panel.hidden=!panel.hidden; $('bikeEditorBtn').setAttribute('aria-expanded',String(!panel.hidden));
-    if(!panel.hidden) {api.stopOtherTools();fillRoutes();if(!dirty)loadRoute(selected);}
-    else {stopDrawing();preview.setMap(null);}
+  $('bikeDiscardDraftBtn').onclick=async()=>{
+    if(!confirm('이 브라우저의 편집본을 삭제하고 게시된 데이터로 복원할까요?'))return;
+    try{await api.replace(copy(serverDataset));storage.removeItem('bike-draft-v3');storage.removeItem('bike-draft-v2');dataset=copy(serverDataset);savedDataset=copy(dataset);selected.clear();activeId=null;dirty=attrDirty=false;undoStack=[];redoStack=[];setMode('select');fillRoutes();loadAttributes();msg('게시된 데이터로 복원했습니다.');}catch(e){msg(e.message,true);}
   };
-  $('bikeEditorClose').onclick=() => {panel.hidden=true;stopDrawing();preview.setMap(null);$('bikeEditorBtn').setAttribute('aria-expanded','false');};
-  window.addEventListener('beforeunload',event => {if(dirty) {event.preventDefault();event.returnValue='';}});
-  window.addEventListener('bike-dataset-changed',() => {if(dataReady&&!restoring) {try {snapshot();fillRoutes();}catch(e){msg('초안 저장 실패: '+e.message,true);}}});
-  api.ready.then(async () => {
-    dataReady=true;serverDataset=JSON.parse(JSON.stringify(api.read()));baseline=fingerprint(serverDataset);fillRoutes();
-    const saved=JSON.parse(storage.getItem('bike-draft-v2') || 'null');
-    if(saved && saved.base===baseline) await restoreDraft();
-    else if(saved) msg('이전 초안이 있습니다. 저장 및 사이트 반영에서 불러올 수 있습니다.');
-  }).catch(error=>msg('도로를 불러오지 못했습니다: '+error.message,true));
+  $('bikePublishBtn').onclick=async()=>{
+    const token=$('bikeGithubToken').value.trim()||api.token();if(!token){msg('GitHub 토큰을 입력하세요. 편집 내용은 저장 버튼으로 이 브라우저에 저장할 수 있습니다.',true);return;}
+    if(!await save())return;busy=true;updateUI();msg('GitHub에 반영 중입니다…');
+    try{await api.publish(copy(dataset),token);serverDataset=copy(dataset);baseline=fingerprint(serverDataset);storage.removeItem('bike-draft-v3');storage.removeItem('bike-draft-v2');$('bikeGithubToken').value='';msg('GitHub에 반영했습니다. Pages 배포 후 다른 기기에도 표시됩니다.');}catch(e){msg('사이트 반영 실패: '+e.message+' 브라우저 저장본은 유지됩니다.',true);}finally{busy=false;updateUI();}
+  };
+  let layerEnabled=false;
+  function syncOverlay(){map.removeOverlayMapTypeId(kakao.maps.MapTypeId.BICYCLE);map.removeOverlayMapTypeId(kakao.maps.MapTypeId.BICYCLE_HYBRID);if(layerEnabled)map.addOverlayMapTypeId(map.getMapTypeId()===kakao.maps.MapTypeId.ROADMAP?kakao.maps.MapTypeId.BICYCLE:kakao.maps.MapTypeId.BICYCLE_HYBRID);}
+  $('bikeLayerBtn').onclick=()=>{layerEnabled=!layerEnabled;$('bikeLayerBtn').setAttribute('aria-pressed',String(layerEnabled));syncOverlay();};kakao.maps.event.addListener(map,'maptypeid_changed',syncOverlay);
+  api.ready.then(async()=>{
+    serverDataset=normalize(api.read());baseline=fingerprint(serverDataset);dataset=copy(serverDataset);
+    const text=storage.getItem('bike-draft-v3')||storage.getItem('bike-draft-v2');
+    if(text){const draft=JSON.parse(text);if(draft.base===baseline||!storage.getItem('bike-draft-v3')){dataset=normalize(draft.dataset);await api.replace(copy(dataset));}else msg('게시 데이터가 변경되어 이전 편집본을 자동 복원하지 않았습니다.',true);}
+    savedDataset=copy(dataset);ready=true;fillRoutes();updateUI();
+  }).catch(e=>{msg('편집 데이터를 준비하지 못했습니다: '+e.message,true);console.error(e);});
 };

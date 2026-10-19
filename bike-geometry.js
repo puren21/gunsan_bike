@@ -1,0 +1,60 @@
+/* Coordinate operations shared by the editor and its tests. */
+(function(root) {
+  'use strict';
+  const copy = x => JSON.parse(JSON.stringify(x));
+  const paths = feature => feature.geometry.type === 'MultiLineString' ? feature.geometry.coordinates : [feature.geometry.coordinates];
+  function distance(a,b) {
+    const rad=Math.PI/180, x=(b[0]-a[0])*rad*Math.cos((a[1]+b[1])*rad/2), y=(b[1]-a[1])*rad;
+    return 6371008.8*Math.hypot(x,y);
+  }
+  function clean(path) {return path.filter((p,i)=>!i||distance(p,path[i-1])>0.0001).map(p=>p.slice(0,2));}
+  function valid(path) {return path.length>=2&&path.every(p=>p.length>=2&&p.every(Number.isFinite)&&p[0]>=-180&&p[0]<=180&&p[1]>=-90&&p[1]<=90)&&path.some(p=>distance(p,path[0])>0.001);}
+  function nearest(path, coordinate, project = p => p) {
+    const p=project(coordinate);let best=null;
+    for(let i=1;i<path.length;i++) {
+      const a=project(path[i-1]),b=project(path[i]),dx=b[0]-a[0],dy=b[1]-a[1];
+      const t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/(dx*dx+dy*dy||1)));
+      const d=Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy);
+      if(!best||d<best.distance)best={index:i,t,distance:d,coordinate:[path[i-1][0]+t*(path[i][0]-path[i-1][0]),path[i-1][1]+t*(path[i][1]-path[i-1][1])]};
+    }
+    return best;
+  }
+  function intersection(a,b,c,d) {
+    const rx=b[0]-a[0],ry=b[1]-a[1],sx=d[0]-c[0],sy=d[1]-c[1];
+    const den=rx*sy-ry*sx;if(Math.abs(den)<1e-18)return null;
+    const t=((c[0]-a[0])*sy-(c[1]-a[1])*sx)/den,u=((c[0]-a[0])*ry-(c[1]-a[1])*rx)/den;
+    return t>=-1e-9&&t<=1+1e-9&&u>=-1e-9&&u<=1+1e-9?Math.max(0,Math.min(1,t)):null;
+  }
+  function split(path,cutter) {
+    const cuts=[];
+    for(let i=0;i<path.length-1;i++)for(let j=0;j<cutter.length-1;j++) {
+      const t=intersection(path[i],path[i+1],cutter[j],cutter[j+1]);
+      if(t!==null) {const pos=i+t;if(pos>1e-8&&pos<path.length-1-1e-8)cuts.push(pos);}
+    }
+    cuts.sort((a,b)=>a-b);const stops=[0,...cuts.filter((x,i)=>!i||Math.abs(x-cuts[i-1])>1e-8),path.length-1];
+    const at = pos => {const i=Math.min(Math.floor(pos),path.length-2),t=pos-i;return [path[i][0]+t*(path[i+1][0]-path[i][0]),path[i][1]+t*(path[i+1][1]-path[i][1])];};
+    const result=[];
+    for(let k=1;k<stops.length;k++) {const a=stops[k-1],b=stops[k],part=[at(a)];for(let i=Math.floor(a)+1;i<b-1e-8;i++)part.push(path[i]);part.push(at(b));const p=clean(part);if(valid(p))result.push(p);}
+    return result.length?result:[copy(path)];
+  }
+  function merge(input,tolerance=0.03) {
+    const result=input.map(p=>clean(copy(p)));let changed=true;
+    while(changed) {
+      changed=false;
+      outer:for(let i=0;i<result.length;i++)for(let j=i+1;j<result.length;j++) {
+        for(const reverseA of [false,true])for(const reverseB of [false,true]) {
+          const a=reverseA?[...result[i]].reverse():result[i],b=reverseB?[...result[j]].reverse():result[j];
+          if(distance(a[a.length-1],b[0])<=tolerance) {
+            // Do not join through a branching junction.
+            const degree=result.reduce((n,p)=>n+(distance(p[0],b[0])<=tolerance?1:0)+(distance(p[p.length-1],b[0])<=tolerance?1:0),0);
+            if(degree!==2)continue;
+            result[i]=a.concat(b.slice(1));result.splice(j,1);changed=true;break outer;
+          }
+        }
+      }
+    }
+    return result;
+  }
+  const api={copy,paths,distance,clean,valid,nearest,split,merge};
+  root.BikeGeometry=api;if(typeof module!=='undefined')module.exports=api;
+})(typeof window==='undefined'?globalThis:window);

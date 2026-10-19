@@ -10035,8 +10035,9 @@ const gunsanStorage = {
       if (panel) panel.style.display = "none";
     }
   </script>
-  <link rel="stylesheet" href="bike-tools.css?v=20261019-2">
-  <script src="bike-tools.js?v=20261019-2"></script>
+  <link rel="stylesheet" href="bike-tools.css?v=20261019-3">
+  <script src="bike-geometry.js?v=20261019-3"></script>
+  <script src="bike-tools.js?v=20261019-3"></script>
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"
     onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
 
@@ -10976,6 +10977,7 @@ const gunsanStorage = {
       }
 
       kakao.maps.event.addListener(map, "rightclick", function(mouseEvent) {
+        if (window.bikeEditor && window.bikeEditor.active) return;
         if (roadWidthMeasureMode) {
           stopRoadWidthMeasure(true);
           return;
@@ -12912,6 +12914,7 @@ const gunsanStorage = {
       // SDK는 바탕지도 라벨 자체의 DOM/클릭 이벤트를 노출하지 않으므로,
       // 클릭 좌표 반경 내 카카오 Places 결과 중 가장 가까운 장소를 사용함.
       kakao.maps.event.addListener(map, "click", function(event) {
+        if (window.bikeEditor && window.bikeEditor.active) return;
         // 일반 왼쪽 클릭에서는 지번/장소 팝업을 새로 띄우지 않음.
         // 기존 지번보기 상태가 있으면 팝업과 연속지적도를 함께 종료.
         closeParcelContextMenu();
@@ -12957,6 +12960,7 @@ const gunsanStorage = {
 
       /* 측정 중 우클릭하면 거리·면적 측정을 완료합니다. */
       kakao.maps.event.addListener(map, "rightclick", function () {
+        if (window.bikeEditor && window.bikeEditor.active) return;
         if (measureMode) finishMeasure();
       });
 
@@ -20550,6 +20554,11 @@ const gunsanStorage = {
       }
 
       function openRoadEditor(groupKey) {
+        if (window.bikeEditor) {
+          const group = groups.get(groupKey);
+          if (group) window.bikeEditor.selectFromRoute(group.number, Math.max(0, group.roads.indexOf(getEditableRoad(groupKey))));
+          return;
+        }
         const group = groups.get(groupKey);
         const road = getEditableRoad(groupKey);
         if (!group || !road) return;
@@ -26094,9 +26103,21 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
         publish: async function(data, token) {
           await overwriteGithubRoadFile("roads.geojson", data, token || getRoadGithubToken(), "군산시 자전거도로 노선 입력 및 편집");
         },
+        setEditing: (function() {
+          let previous = true;
+          return function(active) {
+            if (active) { previous = LAYERS.rural.visible; LAYERS.rural.visible = false; }
+            else LAYERS.rural.visible = previous;
+            clearSelectedRoadHighlight();
+            applyRoadVisibility(); updateLabels();
+          };
+        })(),
         token: getRoadGithubToken,
         stopOtherTools: function() {
+          if (roadEditSessionGroupKey) finishRoadEditSession(roadEditSessionGroupKey);
           closeRoadPopup();
+          closeParcelContextMenu(); closeBasePlacePopup();
+          if (roadWidthMeasureMode) stopRoadWidthMeasure(true);
           if (roadviewMode) roadviewBtn.click();
           if (measureMode && typeof clearMeasure === "function") clearMeasure();
         }
