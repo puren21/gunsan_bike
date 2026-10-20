@@ -36,12 +36,14 @@ window.installBikeTools = function(api) {
   const dock=document.createElement('section');dock.id='bikeEditDock';dock.setAttribute('aria-label','이동 가능한 편집 도구');
   dock.innerHTML='<span class="bike-drag-handle" title="드래그하여 편집 도구 이동" aria-label="편집 도구 이동">⠿</span>';
   dock.append(panel.querySelector('.bike-digitizing-tools'));
+  const editButton=$('bikeEditorBtn');editButton.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#8b6c27" stroke-width="1.8"><path d="m4 16 11-11 4 4-11 11-5 1Z"/><path d="m12 8 4 4M4 16l4 4"/></svg>';
+  dock.querySelector('.bike-digitizing-tools').prepend(editButton);
   const listButton=document.createElement('button');listButton.id='bikeTableBtn';listButton.type='button';listButton.disabled=true;listButton.title='속성테이블 · 목록';listButton.setAttribute('aria-label','속성테이블 · 목록');listButton.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#526f84" stroke-width="1.5"><path d="M3 4h18v16H3zM3 9h18M3 14h18M9 4v16"/></svg>';
   const snapButton=document.createElement('button');snapButton.id='bikeSnapCheck';snapButton.type='button';snapButton.setAttribute('aria-label','스냅 켜기·끄기');snapButton.title='스냅 · 끝점·꼭지점·선분 (20px)';
   snapButton.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#8e4b51" stroke-width="2"><path d="M4 4v9a8 8 0 0 0 16 0V4h-5v9a3 3 0 0 1-6 0V4Z"/><path d="M4 8h5m6 0h5"/></svg>';
   dock.querySelector('.bike-digitizing-tools').append(snapButton,listButton);document.body.append(dock);
   const tablePanel=document.createElement('section');tablePanel.id='bikeTablePanel';tablePanel.hidden=true;tablePanel.setAttribute('aria-label','자전거도로 속성테이블');
-  tablePanel.innerHTML='<header><h2>자전거도로 속성테이블</h2><button type="button" id="bikeTableClose" aria-label="속성테이블 닫기">×</button></header><div class="bike-table-actions"><input id="bikeTableSearch" placeholder="노선·속성 검색" aria-label="노선·속성 검색"><span id="bikeTableCount"></span></div><p>행을 클릭하면 지도에서 선택합니다. 셀을 수정한 뒤 편집 창의 저장을 누르세요.</p><div class="bike-table-scroll"><table><thead></thead><tbody></tbody></table></div>';
+  tablePanel.innerHTML='<header><h2>자전거도로 속성테이블</h2><button type="button" id="bikeTableClose" aria-label="속성테이블 닫기">×</button></header><div class="bike-table-actions"><input id="bikeTableSearch" placeholder="노선·속성 검색" aria-label="노선·속성 검색"><span id="bikeTableCount"></span><div class="bike-table-buttons"><button id="bikeTableDelete" type="button" disabled>선택 행 삭제</button><button id="bikeTableSave" type="button">저장</button><button id="bikeTableCancel" type="button" title="마지막 저장 이후의 미저장 변경 취소">취소</button></div></div><p>행 클릭: 선택 · Shift+클릭: 추가 선택 · 삭제·수정은 저장을 눌러 반영합니다. 취소는 마지막 저장 이후의 변경을 되돌립니다.</p><p id="bikeTableMessage" role="status"></p><div class="bike-table-scroll"><table><thead></thead><tbody></tbody></table></div>';
   document.body.append(tablePanel);
   const columns=[['노선명','number'],['구분','자전거도로'],['기점','기점'],['종점','종점'],['도로폭 (m)','도로폭'],['연장 (km)','연장'],['비고','비고']];
   function cellValue(f,key){const p=f.properties;return key==='number'?nameOf(f):key==='자전거도로'?api.normalizeCategory(p['구분']||p.GUBUN||p[key]):key==='기점'?(p['기점']||p['시점']||''):p[key]??'';}
@@ -57,7 +59,15 @@ window.installBikeTools = function(api) {
   listButton.onclick=()=>{if(!ready)return;if(!commitAttributes())return;tablePanel.hidden=!tablePanel.hidden;listButton.setAttribute('aria-pressed',String(!tablePanel.hidden));renderTable();};
   $('bikeTableClose').onclick=()=>{tablePanel.hidden=true;listButton.setAttribute('aria-pressed','false');};
   $('bikeTableSearch').oninput=renderTable;
-  tablePanel.querySelector('tbody').addEventListener('click',e=>{const row=e.target.closest('tr[data-id]');if(!row)return;if(!editing)start();selectFeature(row.dataset.id);const f=active();if(f)api.showRoute(nameOf(f),copy(f));});
+  $('bikeTableDelete').onclick=()=>{deleteSelected();renderTable();};
+  $('bikeTableSave').onclick=()=>save();
+  $('bikeTableCancel').onclick=()=>{
+    if(busy||!savedDataset)return;
+    dataset=copy(savedDataset);selected.clear();activeId=null;part=0;stagedImport=null;capture=[];attrDirty=dirty=false;undoStack=[];redoStack=[];
+    $('bikePanelImport').value='';$('bikePanelImportStatus').textContent='GeoJSON 파일 선택 후 위의 저장을 누르면 현재 노선을 교체합니다.';
+    setMode('select');fillRoutes();loadAttributes();paint();msg('미저장 변경을 취소하고 마지막 저장 상태로 되돌렸습니다.');
+  };
+  tablePanel.querySelector('tbody').addEventListener('click',e=>{const row=e.target.closest('tr[data-id]');if(!row)return;if(!editing)start();selectFeature(row.dataset.id,e.shiftKey||e.ctrlKey||e.metaKey);const f=active();if(f)api.showRoute(nameOf(f),copy(f));});
   tablePanel.querySelector('tbody').addEventListener('change',e=>{
     const row=e.target.closest('tr[data-id]'),key=e.target.dataset.key;if(!row||!key||key==='연장')return;
     const f=dataset.features.find(f=>idOf(f)===row.dataset.id);if(!f)return;
@@ -69,7 +79,7 @@ window.installBikeTools = function(api) {
   });
   function movable(element,handle,key){
     const saved=(()=>{try{return JSON.parse(storage.getItem(key)||'null');}catch(e){return null;}})();
-    if(saved){element.style.left=Math.max(0,Math.min(saved.left,innerWidth-100))+'px';element.style.top=Math.max(0,Math.min(saved.top,innerHeight-60))+'px';element.style.right='auto';element.style.bottom='auto';if(saved.width)element.style.width=Math.min(saved.width,innerWidth-16)+'px';if(saved.height)element.style.height=Math.min(saved.height,innerHeight-16)+'px';if(element!==dock)element.style.maxHeight=Math.max(190,innerHeight-parseFloat(element.style.top)-8)+'px';}
+    if(saved){element.style.left=Math.max(0,Math.min(saved.left,innerWidth-100))+'px';element.style.top=Math.max(0,Math.min(saved.top,innerHeight-60))+'px';element.style.right='auto';element.style.bottom='auto';if(saved.width&&element!==dock)element.style.width=Math.min(saved.width,innerWidth-16)+'px';if(saved.height)element.style.height=Math.min(saved.height,innerHeight-16)+'px';if(element!==dock)element.style.maxHeight=Math.max(190,innerHeight-parseFloat(element.style.top)-8)+'px';}
     const persist=()=>{const r=element.getBoundingClientRect();if(r.width&&r.height)storage.setItem(key,JSON.stringify({left:r.left,top:r.top,width:r.width,height:element===dock?undefined:r.height}));};
     handle.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('button,input,select'))return;e.preventDefault();const r=element.getBoundingClientRect(),x=e.clientX,y=e.clientY;handle.setPointerCapture(e.pointerId);handle.style.touchAction='none';
       const move=v=>{element.style.left=Math.max(0,Math.min(innerWidth-80,r.left+v.clientX-x))+'px';element.style.top=Math.max(0,Math.min(innerHeight-45,r.top+v.clientY-y))+'px';element.style.right='auto';element.style.bottom='auto';if(element!==dock)element.style.maxHeight=Math.max(190,innerHeight-parseFloat(element.style.top)-8)+'px';};
@@ -77,9 +87,32 @@ window.installBikeTools = function(api) {
     });
     if(element!==dock)new ResizeObserver(()=>{if(!element.hidden&&element.style.left)persist();}).observe(element);
   }
-  function placeDock(){if(storage.getItem('bike-ui-dock'))return;const r=$('normalBtn').getBoundingClientRect(),width=dock.getBoundingClientRect().width;dock.style.left=Math.max(8,r.left-width-10)+'px';dock.style.top=(r.left>=width+18?r.top:r.bottom+10)+'px';}
-  movable(dock,dock.querySelector('.bike-drag-handle'),'bike-ui-dock');movable(panel,panel.querySelector('header'),'bike-ui-panel');movable(tablePanel,tablePanel.querySelector('header'),'bike-ui-table');
+  function placeDock(){if(storage.getItem('bike-ui-dock-v2'))return;const r=$('normalBtn').getBoundingClientRect(),width=dock.getBoundingClientRect().width;dock.style.left=Math.max(8,r.left-width-10)+'px';dock.style.top=(r.left>=width+18?r.top:r.bottom+10)+'px';}
+  movable(dock,dock.querySelector('.bike-drag-handle'),'bike-ui-dock-v2');movable(panel,panel.querySelector('header'),'bike-ui-panel');movable(tablePanel,tablePanel.querySelector('header'),'bike-ui-table');
   requestAnimationFrame(placeDock);window.addEventListener('resize',placeDock);
+  function edgeResize(element){
+    if(element.querySelector(':scope > .bike-resize-edge'))return;element.dataset.bikeEdgeResize='1';element.classList.add('bike-edge-resizable');if(getComputedStyle(element).position==='static')element.style.position='relative';
+    for(const direction of ['n','e','s','w','ne','se','sw','nw']){
+      const handle=document.createElement('div');handle.className='bike-resize-edge bike-resize-'+direction;handle.title='드래그하여 크기 조절';handle.setAttribute('aria-label',direction+' 가장자리 크기 조절');element.append(handle);
+      handle.addEventListener('pointerdown',e=>{
+        if(e.button!==0)return;e.preventDefault();e.stopPropagation();const r=element.getBoundingClientRect(),x=e.clientX,y=e.clientY,ratio=r.width/(element.offsetWidth||r.width),minW=element===dock?120:element.id==='mapTools'?80:260,minH=element===dock||element.classList.contains('top-toolbar')||element.id==='mapTools'?42:180;
+        handle.setPointerCapture(e.pointerId);
+        const move=v=>{const dx=v.clientX-x,dy=v.clientY-y;let left=r.left,top=r.top,width=r.width,height=r.height;
+          if(direction.includes('e'))width=Math.max(minW,Math.min(innerWidth-r.left-4,r.width+dx));
+          if(direction.includes('s'))height=Math.max(minH,Math.min(innerHeight-r.top-4,r.height+dy));
+          if(direction.includes('w')){left=Math.max(0,Math.min(r.right-minW,r.left+dx));width=r.right-left;}
+          if(direction.includes('n')){top=Math.max(0,Math.min(r.bottom-minH,r.top+dy));height=r.bottom-top;}
+          element.style.setProperty('position','fixed','important');element.style.setProperty('left',left/ratio+'px','important');element.style.setProperty('top',top/ratio+'px','important');element.style.setProperty('right','auto','important');element.style.setProperty('bottom','auto','important');
+          element.style.setProperty('width',width/ratio+'px','important');element.style.setProperty('height',height/ratio+'px','important');element.style.setProperty('max-height',(innerHeight-top-4)/ratio+'px','important');element.style.setProperty('max-width',(innerWidth-left-4)/ratio+'px','important');
+        };
+        const up=()=>{handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',up);handle.removeEventListener('pointercancel',up);const r=element.getBoundingClientRect();const key=element===dock?'bike-ui-dock-v2':element===panel?'bike-ui-panel':element===tablePanel?'bike-ui-table':null;if(key)storage.setItem(key,JSON.stringify({left:r.left,top:r.top,width:r.width,height:r.height}));};
+        handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',up);handle.addEventListener('pointercancel',up);
+      });
+    }
+  }
+  function installResizeEdges(){document.querySelectorAll('#bikeEditorPanel,#bikeTablePanel,#bikeEditDock,.top-toolbar,#mapTools,#listPanel,#layerPanel,#stylePanel,#roadLayerUnifiedPanel,.road-popup').forEach(edgeResize);}
+  installResizeEdges();new MutationObserver(installResizeEdges).observe(document.body,{childList:true,subtree:true});
+
 
   let editing=false,ready=false,busy=false,dirty=false,attrDirty=false,activeId=null,part=0,mode='select';
   let dataset={type:'FeatureCollection',features:[]},serverDataset=null,baseline='',savedDataset=null;
@@ -107,7 +140,7 @@ window.installBikeTools = function(api) {
   kakao.maps.event.addListener(rubberBand,'click',event=>{kakao.maps.event.preventMap();dispatchClick(coord(event.latLng));});
   kakao.maps.event.addListener(rubberBand,'rightclick',()=>{kakao.maps.event.preventMap();finishCapture();});
   document.getElementById('map').addEventListener('mouseleave',()=>{captureCursor=null;rubberBand.setMap(null);snapIndicator.setMap(null);});
-  const msg=(text,error=false)=>{ $('bikeEditorMessage').textContent=text;$('bikeEditorMessage').classList.toggle('error',error); };
+  const msg=(text,error=false)=>{ $('bikeTableMessage').textContent=text;$('bikeTableMessage').classList.toggle('error',error);$('bikeEditorMessage').textContent=text;$('bikeEditorMessage').classList.toggle('error',error); };
   const nameOf=f=>String(f.properties.number||f.properties['자전도로명']||f.properties['자전거도로명']||f.properties.NUM||'');
   const idOf=f=>f.properties.__bike_id;
   const uid=()=> 'bike-'+(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
@@ -154,6 +187,7 @@ window.installBikeTools = function(api) {
   }
   function updateUI() {
     $('bikeTableBtn').disabled=!ready||busy;
+    $('bikeTableDelete').disabled=busy||!selected.size;$('bikeTableSave').disabled=busy||!ready;$('bikeTableCancel').disabled=busy||(!dirty&&!attrDirty&&!stagedImport&&!capture.length);
     tablePanel.querySelectorAll('tr[data-id]').forEach(row=>row.setAttribute('aria-selected',String(selected.has(row.dataset.id))));
     if(!tablePanel.hidden)$('bikeTableCount').textContent=tablePanel.querySelectorAll('tbody tr').length+' / '+dataset.features.length+'개 · 선택 '+selected.size+'개';
     $('bikeSelectionState').textContent=selected.size?selected.size+'개 라인 선택'+(active()?' · '+nameOf(active()):''):'선택한 라인 없음';
@@ -396,6 +430,6 @@ window.installBikeTools = function(api) {
     const text=storage.getItem('bike-draft-v3')||storage.getItem('bike-draft-v2');
     if(text){const draft=JSON.parse(text);if(draft.base===baseline||draft.base===oldFingerprint){dataset=normalize(draft.dataset);await api.replace(copy(dataset));}else {olderDraft=normalize(draft.dataset);msg('게시 데이터가 변경되어 이전 편집본을 자동 복원하지 않았습니다. 이전 브라우저 편집본 내보내기로 백업할 수 있습니다.',true);}}
     if(olderDraft){const backup=document.createElement('button');backup.type='button';backup.textContent='이전 브라우저 편집본 내보내기';backup.onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(olderDraft,null,2)],{type:'application/geo+json'})),a=document.createElement('a');a.href=url;a.download='gunsan_previous_browser_draft.geojson';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};panel.querySelector('.bike-file-menu').append(backup);}
-    savedDataset=olderDraft||copy(dataset);ready=true;fillRoutes();updateUI();
+    savedDataset=copy(dataset);ready=true;fillRoutes();updateUI();
   }).catch(e=>{msg('편집 데이터를 준비하지 못했습니다: '+e.message,true);console.error(e);});
 };

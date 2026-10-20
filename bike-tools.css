@@ -73,3 +73,15 @@
 #bikeEditorPanel .bike-file-pick{display:flex;align-items:center;justify-content:center;flex:1;border:1px solid #ced8e2;border-radius:7px;padding:8px;margin:0;background:#f5f8fa;color:#184f73;font-size:12px;cursor:pointer}#bikeEditorPanel .bike-file-pick input{display:none}
 
 .bike-cloud-settings{padding:12px;border:1px solid #d8e2ea;border-radius:12px;background:white;margin-bottom:12px;font:13px/1.5 sans-serif;color:#243746}.bike-cloud-settings h3{font-size:15px;margin:0}.bike-cloud-settings p{font-size:12px;margin:8px 0}.bike-cloud-settings label{display:block;margin:8px 0}.bike-cloud-settings input{box-sizing:border-box;width:100%;padding:7px;border:1px solid #bdcbd6;border-radius:5px}.bike-cloud-settings button{padding:7px 12px;border:1px solid #bdcbd6;border-radius:5px;background:#f5f8fa;cursor:pointer}.bike-cloud-settings summary{cursor:pointer;font-weight:bold}.bike-cloud-settings [hidden]{display:none!important}
+
+/* Single row tool groups; edge handles provide resizing on every side. */
+#bikeEditDock{width:max-content;min-width:120px;min-height:42px;flex-wrap:nowrap;overflow:visible}
+#bikeEditDock .bike-digitizing-tools{flex-wrap:nowrap;min-width:0;overflow-x:auto;scrollbar-width:thin;align-items:center}
+#bikeEditDock button{flex:0 0 34px;min-height:34px}#bikeEditDock #bikeEditorBtn{width:34px;height:34px;padding:4px;min-height:34px}
+.top-toolbar.has-bike-tools{flex-wrap:nowrap!important;min-height:42px}.top-toolbar #mapTools{flex-wrap:nowrap!important}
+.bike-table-buttons{margin-left:auto;display:flex;gap:7px;flex:none}.bike-table-buttons button{padding:7px 14px;border:1px solid #b8c9d7;border-radius:6px;background:#f5f8fa;white-space:nowrap;color:#184f73;cursor:pointer}.bike-table-buttons button:disabled{opacity:.4;cursor:not-allowed}#bikeTableDelete{color:#a63838}#bikeTableSave{background:#1769aa;color:white;border-color:#1769aa}
+.bike-table-actions{flex-wrap:wrap}#bikeTablePanel .bike-table-scroll{max-height:calc(100% - 125px)}
+.bike-resize-edge{position:absolute;z-index:30;touch-action:none;user-select:none}.bike-resize-e{right:0;top:12px;bottom:12px;width:8px;cursor:ew-resize}.bike-resize-w{left:0;top:12px;bottom:12px;width:8px;cursor:ew-resize}.bike-resize-n{left:12px;right:12px;top:0;height:8px;cursor:ns-resize}.bike-resize-s{left:12px;right:12px;bottom:0;height:8px;cursor:ns-resize}.bike-resize-ne,.bike-resize-se,.bike-resize-sw,.bike-resize-nw{width:12px;height:12px}.bike-resize-ne{top:0;right:0;cursor:nesw-resize}.bike-resize-se{bottom:0;right:0;cursor:nwse-resize}.bike-resize-sw{bottom:0;left:0;cursor:nesw-resize}.bike-resize-nw{top:0;left:0;cursor:nwse-resize}.bike-resize-edge:hover{background:#458ccd33}
+#bikeEditorPanel,#bikeTablePanel{resize:none;padding-bottom:20px}
+
+#bikeTableMessage:empty{display:none}#bikeTableMessage.error{color:#b52525}
