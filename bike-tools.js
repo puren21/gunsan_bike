@@ -307,7 +307,7 @@ window.installBikeTools = function(api) {
   }
   async function save(stop=false) {
     if(busy||!ready)return false;
-    if(stagedImport){const pending=stagedImport;stagedImport=null;const ok=await importData(pending);if(ok){$('bikePanelImport').value='';$('bikePanelImportStatus').textContent=pending.features.length+'개 구간 저장 완료 · 현재 지도에 표시했습니다.';api.showAllRoutes();}else stagedImport=pending;return ok;}
+    if(stagedImport){const pending=stagedImport;stagedImport=null;const ok=await importData(pending);if(ok){$('bikePanelImport').value='';$('bikePanelImportStatus').textContent=pending.features.length+'개 구간 저장 완료 · 공용저장소와 현재 지도에 표시했습니다.';api.showAllRoutes();}else stagedImport=pending;return ok;}
     if(['draw','split'].includes(mode)&&capture.length&&!finishCapture())return false;
     if(!commitAttributes())return false;
     busy=true;updateUI();
@@ -315,11 +315,13 @@ window.installBikeTools = function(api) {
       const next=prepareData();
       // Durable write first. A quota failure leaves edit mode and input intact.
       storage.setItem('bike-draft-v3',JSON.stringify({base:baseline,dataset:next,updated:new Date().toISOString()}));
+      await window.GunsanCloud.save(copy(next));
+      serverDataset=copy(next);baseline=fingerprint(serverDataset);storage.removeItem('bike-draft-v3');storage.removeItem('bike-draft-v2');
       await api.replace(copy(next));dataset=next;savedDataset=copy(next);dirty=attrDirty=false;undoStack=[];redoStack=[];
       lastSaved=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});fillRoutes();loadAttributes();
       if(stop){editing=false;snapIndicator.setMap(null);panel.hidden=true;api.setEditing(false);removeOverlays();map.setCursor('');$('bikeEditorBtn').setAttribute('aria-pressed','false');$('bikeEditorBtn').setAttribute('aria-label','편집 모드 켜기');$('bikeEditorBtn').title='편집 모드 켜기';}
       else {setMode('select');paint();}
-      msg('도형과 속성을 함께 저장했습니다. 저장 위치: 이 브라우저.');return true;
+      msg('도형과 속성을 공용저장소에 저장했습니다. 다른 컴퓨터에서 새로고침하면 같은 노선이 표시됩니다.');return true;
     }catch(e){msg('저장하지 못했습니다: '+e.message,true);return false;}
     finally{busy=false;updateUI();}
   }
@@ -330,7 +332,7 @@ window.installBikeTools = function(api) {
       const bounds=new kakao.maps.LatLngBounds();dataset.features.forEach(f=>G.paths(f).forEach(p=>p.forEach(c=>bounds.extend(point(c)))));
       map.setBounds(bounds,110,panel.getBoundingClientRect().width+35,90,Math.min(300,window.innerWidth*0.24));
     }
-    msg('편집할 라인을 지도에서 클릭하세요. 저장은 이 브라우저에 보관하며, 다른 컴퓨터 공유는 GitHub 반영이 필요합니다.');
+    msg('편집할 라인을 지도에서 클릭하세요. 저장을 누르면 공용저장소에 반영됩니다. 편집 전 도로목록의 공용저장소에 로그인하세요.');
   }
   function validateImport(raw) {
     if(!raw||raw.type!=='FeatureCollection'||!Array.isArray(raw.features)||!raw.features.length)throw Error('노선이 포함된 GeoJSON FeatureCollection 파일을 선택하세요.');
@@ -388,9 +390,12 @@ window.installBikeTools = function(api) {
   function syncOverlay(){map.removeOverlayMapTypeId(kakao.maps.MapTypeId.BICYCLE);map.removeOverlayMapTypeId(kakao.maps.MapTypeId.BICYCLE_HYBRID);if(layerEnabled)map.addOverlayMapTypeId(map.getMapTypeId()===kakao.maps.MapTypeId.ROADMAP?kakao.maps.MapTypeId.BICYCLE:kakao.maps.MapTypeId.BICYCLE_HYBRID);}
   $('bikeLayerBtn').onclick=()=>{layerEnabled=!layerEnabled;$('bikeLayerBtn').setAttribute('aria-pressed',String(layerEnabled));syncOverlay();};kakao.maps.event.addListener(map,'maptypeid_changed',()=>{syncOverlay();if(editing)paint();});
   api.ready.then(async()=>{
-    const raw=api.read(),oldFingerprint=fingerprint(raw);serverDataset=normalize(raw);baseline=fingerprint(serverDataset);dataset=copy(serverDataset);let olderDraft=null;
+    let shared=null;try{shared=await window.GunsanCloud.load();}catch(e){msg('공용저장소 연결 실패: '+e.message+' 게시된 기본 노선을 표시합니다.',true);}
+    if(shared)await api.replace(copy(shared));
+    const raw=shared||api.read(),oldFingerprint=fingerprint(raw);serverDataset=normalize(raw);baseline=fingerprint(serverDataset);dataset=copy(serverDataset);let olderDraft=null;
     const text=storage.getItem('bike-draft-v3')||storage.getItem('bike-draft-v2');
-    if(text){const draft=JSON.parse(text);if(draft.base===baseline||draft.base===oldFingerprint){dataset=normalize(draft.dataset);await api.replace(copy(dataset));}else {olderDraft=normalize(draft.dataset);msg('게시 데이터가 변경되어 이전 편집본을 자동 복원하지 않았습니다. 저장본 불러오기로 복원할 수 있습니다.',true);}}
+    if(text){const draft=JSON.parse(text);if(draft.base===baseline||draft.base===oldFingerprint){dataset=normalize(draft.dataset);await api.replace(copy(dataset));}else {olderDraft=normalize(draft.dataset);msg('게시 데이터가 변경되어 이전 편집본을 자동 복원하지 않았습니다. 이전 브라우저 편집본 내보내기로 백업할 수 있습니다.',true);}}
+    if(olderDraft){const backup=document.createElement('button');backup.type='button';backup.textContent='이전 브라우저 편집본 내보내기';backup.onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(olderDraft,null,2)],{type:'application/geo+json'})),a=document.createElement('a');a.href=url;a.download='gunsan_previous_browser_draft.geojson';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};panel.querySelector('.bike-file-menu').append(backup);}
     savedDataset=olderDraft||copy(dataset);ready=true;fillRoutes();updateUI();
   }).catch(e=>{msg('편집 데이터를 준비하지 못했습니다: '+e.message,true);console.error(e);});
 };

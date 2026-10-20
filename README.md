@@ -1,5 +1,7 @@
 # 군산시 자전거도로 지도 — GitHub Pages 배포판
 
+2026-10-20 업데이트: 노선의 기준 저장소는 Supabase의 gunsan_bike_datasets입니다. 도로목록 → 공용저장소에서 기존 편집 계정으로 로그인한 뒤 저장하면 도형·속성이 공용 DB에 반영됩니다. 다른 컴퓨터는 새로고침해 최신 노선을 읽습니다. 익명 사용자는 읽기만 가능하며 버전 충돌 시 덮어쓰기를 거부합니다. 이전 버전은 gunsan_bike_history에 보관합니다. roads.geojson은 연결 실패 시 표시하는 기본 자료입니다. 브라우저 백업은 저장 실패 시에도 남깁니다. 아래 과거 브라우저 저장·GitHub 반영 설명은 현재 기본 저장 동작에 적용되지 않습니다.
+
 원본: https://github.com/puren21/gyeongju_road
 복제 기준 커밋: 88d5b3c3c33b3026fb4feb99ea9d799aca5711e0
 
