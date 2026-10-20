@@ -55,6 +55,17 @@
     }
     return result;
   }
+  function connect(a,b) {
+    if(!valid(a)||!valid(b))throw Error('유효한 두 라인을 선택하세요.');
+    if(distance(a[0],a[a.length-1])<0.0001||distance(b[0],b[b.length-1])<0.0001)throw Error('닫힌 라인은 연결할 수 없습니다.');
+    let best=null;
+    for(const reverseA of [false,true])for(const reverseB of [false,true]){
+      const first=reverseA?a.slice().reverse():a.slice(),second=reverseB?b.slice().reverse():b.slice();
+      const gap=distance(first[first.length-1],second[0]);
+      if(!best||gap<best.distance)best={coordinates:clean(first.concat(second)),bridge:[first[first.length-1].slice(),second[0].slice()],distance:gap};
+    }
+    return best;
+  }
   function intersectsBox(path,box) {
     for(let i=1;i<path.length;i++) {
       const a=path[i-1],b=path[i],dx=b[0]-a[0],dy=b[1]-a[1];
@@ -87,6 +98,6 @@
     }
     return vertex||segment;
   }
-  const api={copy,paths,distance,clean,valid,nearest,split,merge,intersectsBox,snapToPaths};
+  const api={copy,paths,distance,clean,valid,nearest,split,merge,connect,intersectsBox,snapToPaths};
   root.BikeGeometry=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window==='undefined'?globalThis:window);
