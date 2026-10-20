@@ -220,7 +220,7 @@ window.installBikeTools = function(api) {
       const category=idOf(f)===activeId&&attrDirty?$('bikeRouteCategory').value:api.normalizeCategory(f.properties['구분']||f.properties.GUBUN||f.properties['자전거도로']);
       const color=api.colorForCategory(category);
       G.paths(f).forEach((path,partIndex)=>{
-        line(path,{strokeColor:picked?'#000000':color,strokeWeight:picked?2:4,zIndex:picked?912:900});
+        line(path,{strokeColor:picked?'#FF3DBB':color,strokeWeight:4,zIndex:picked?912:900});
         const hit=line(path,{strokeColor:'#000000',strokeOpacity:0.01,strokeWeight:14,zIndex:picked?915:905});
         kakao.maps.event.addListener(hit,'mousemove',followCursor);
         kakao.maps.event.addListener(hit,'click',e=>{kakao.maps.event.preventMap();dispatchClick(coord(e.latLng),idOf(f),partIndex);});
