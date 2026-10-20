@@ -70,7 +70,7 @@ window.installBikeTools = function(api) {
     $('bikePanelImport').value='';$('bikePanelImportStatus').textContent='GeoJSON 파일 선택 후 위의 저장을 누르면 현재 노선을 교체합니다.';
     setMode('select');fillRoutes();loadAttributes();paint();try{storage.setItem('bike-draft-v3',JSON.stringify({base:baseline,dataset:copy(savedDataset),updated:new Date().toISOString()}));}catch(e){}msg('미저장 변경을 취소하고 마지막 저장 상태로 되돌렸습니다.');
   };
-  tablePanel.querySelector('tbody').addEventListener('click',e=>{const row=e.target.closest('tr[data-id]');if(!row)return;if(!editing)start();selectFeature(row.dataset.id,e.shiftKey||e.ctrlKey||e.metaKey||['merge','connect'].includes(mode));const f=active();if(f)api.showRoute(nameOf(f),copy(f));});
+  tablePanel.querySelector('tbody').addEventListener('click',e=>{const row=e.target.closest('tr[data-id]');if(!row)return;if(!editing)start();selectFeature(row.dataset.id,e.shiftKey||e.ctrlKey||e.metaKey||['merge','connect'].includes(mode));const f=active();if(f&&!(mode==='connect'&&selected.size===2))api.showRoute(nameOf(f),copy(f));});
   tablePanel.querySelector('tbody').addEventListener('change',e=>{
     const row=e.target.closest('tr[data-id]'),key=e.target.dataset.key;if(!row||!key||key==='연장')return;
     const f=dataset.features.find(f=>idOf(f)===row.dataset.id);if(!f)return;
@@ -287,7 +287,7 @@ window.installBikeTools = function(api) {
     if(mode==='connect'&&multi&&!selected.has(id)&&selected.size>=2){msg('두 라인만 선택하세요. 선택한 라인을 다시 클릭하면 해제됩니다.',true);return;}
     if(!commitAttributes())return;
     if(multi){if(selected.has(id))selected.delete(id);else selected.add(id);}else selected=new Set([id]);
-    activeId=selected.has(id)?id:[...selected][0]||null;part=partIndex;loadAttributes();paint();
+    activeId=selected.has(id)?id:[...selected][0]||null;part=partIndex;loadAttributes();paint();if(mode==='connect'&&selected.size===2)focusConnection();
   }
   function dispatchClick(c,id=null,partIndex=0) {
     if(!editing||busy)return;
@@ -335,6 +335,7 @@ window.installBikeTools = function(api) {
     checkpoint();const merged={type:'Feature',properties:copy(chosen[0].properties),geometry:parts.length===1?{type:'LineString',coordinates:parts[0]}:{type:'MultiLineString',coordinates:parts}};
     dataset.features=dataset.features.filter(f=>!selected.has(idOf(f))).concat(merged);activeId=idOf(merged);selected=new Set([activeId]);part=0;dirty=true;setMode('select');fillRoutes();loadAttributes();paint();msg('병합했습니다. 첫 선택 라인의 속성을 사용합니다.'+(parts.length>1?' 떨어진 구간은 '+parts.length+'개 부분으로 유지했습니다.':''));
   }
+  function focusConnection(){const bounds=new kakao.maps.LatLngBounds();dataset.features.filter(f=>selected.has(idOf(f))).forEach(f=>G.paths(f).forEach(path=>path.forEach(c=>bounds.extend(point(c)))));if(!bounds.isEmpty())map.setBounds(bounds,90,panel.getBoundingClientRect().width+40,90,90);}
   function connection() {
     if(selected.size!==2)throw Error('연결할 라인 두 개를 선택하세요.');
     const chosen=[...selected].map(id=>dataset.features.find(f=>idOf(f)===id));
@@ -421,7 +422,7 @@ window.installBikeTools = function(api) {
   ['select','draw','vertex','split','multi'].forEach(tool=>$('bikeTool-'+tool).onclick=()=>{if(!editing)start();if(commitAttributes())setMode(tool);});
   $('bikeTool-merge').title='라인 병합: 누른 뒤 합칠 라인을 선택';
   $('bikeTool-merge').onclick=()=>{if(!editing)start();if(!busy&&commitAttributes()){setMode('merge');msg('합칠 라인을 지도에서 클릭하고 병합 실행 버튼을 누르세요.');}};
-  $('bikeTool-connect').onclick=()=>{if(!editing)start();if(!busy&&commitAttributes()){setMode('connect');msg('연결할 두 라인을 선택하고 주황 점선을 확인한 뒤 연결 실행을 누르세요.');}};
+  $('bikeTool-connect').onclick=()=>{if(!editing)start();if(!busy&&commitAttributes()){setMode('connect');if(selected.size===2)focusConnection();msg('연결할 두 라인을 선택하고 주황 점선을 확인한 뒤 연결 실행을 누르세요.');}};
   $('bikeMergeFinishBtn').onclick=()=>mode==='connect'?connectSelected():mergeSelected();
   $('bikeMergeSelection').onclick=e=>{const button=e.target.closest('button[data-remove-line]');if(button)selectFeature(button.dataset.removeLine,true);};$('bikeTool-delete').onclick=deleteSelected;$('bikeTool-undo').onclick=undo;$('bikeTool-redo').onclick=redo;
   $('bikeFinishBtn').onclick=finishCapture;$('bikeCancelToolBtn').onclick=()=>setMode('select');
