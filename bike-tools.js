@@ -217,9 +217,10 @@ window.installBikeTools = function(api) {
       const category=idOf(f)===activeId&&attrDirty?$('bikeRouteCategory').value:api.normalizeCategory(f.properties['구분']||f.properties.GUBUN||f.properties['자전거도로']);
       const color=api.colorForCategory(category);
       G.paths(f).forEach((path,partIndex)=>{
-        if(picked)line(path,{strokeColor:'#FFFFFF',strokeWeight:9,zIndex:902});
-        line(path,{strokeColor:color,strokeWeight:picked?5:4,zIndex:picked?903:900});
-        const hit=line(path,{strokeColor:'#000000',strokeOpacity:0.01,strokeWeight:14,zIndex:905});
+        if(picked){line(path,{strokeColor:'#E40078',strokeWeight:13,zIndex:910});line(path,{strokeColor:'#FFFFFF',strokeWeight:9,zIndex:911});}
+        line(path,{strokeColor:color,strokeWeight:picked?5:4,zIndex:picked?912:900});
+        if(picked&&mode!=='vertex'){[path[0],path[path.length-1]].forEach(c=>{const el=document.createElement('div');el.className='bike-selected-endpoint';const marker=new kakao.maps.CustomOverlay({map,position:point(c),content:el,xAnchor:.5,yAnchor:.5,zIndex:918});overlays.push(marker);});}
+        const hit=line(path,{strokeColor:'#000000',strokeOpacity:0.01,strokeWeight:14,zIndex:picked?915:905});
         kakao.maps.event.addListener(hit,'mousemove',followCursor);
         kakao.maps.event.addListener(hit,'click',e=>{kakao.maps.event.preventMap();dispatchClick(coord(e.latLng),idOf(f),partIndex);});
         kakao.maps.event.addListener(hit,'rightclick',()=>{kakao.maps.event.preventMap();finishCapture();});
@@ -419,6 +420,7 @@ window.installBikeTools = function(api) {
   $('bikeRouteForm').onsubmit=e=>{e.preventDefault();save();};[$('bikeRouteName'),$('bikeAttributes')].forEach(input=>input.addEventListener('input',()=>{attrDirty=true;updateUI();}));
   $('bikePartSelect').onchange=e=>{if(commitAttributes()){part=Number(e.target.value);setMode('vertex');}};
   ['select','draw','vertex','split','multi'].forEach(tool=>$('bikeTool-'+tool).onclick=()=>{if(!editing)start();if(commitAttributes())setMode(tool);});
+  $('bikeTool-select').title='선택 (V)';$('bikeTool-select').setAttribute('aria-keyshortcuts','v');
   $('bikeTool-merge').title='라인 병합: 누른 뒤 합칠 라인을 선택';
   $('bikeTool-merge').onclick=()=>{if(!editing)start();if(!busy&&commitAttributes()){setMode('merge');msg('합칠 라인을 지도에서 클릭하고 병합 실행 버튼을 누르세요.');}};
   $('bikeTool-connect').onclick=()=>{if(!ready||busy)return;if(!editing)start(true);if(!busy&&commitAttributes()){setMode('connect');msg('연결할 두 라인을 선택하고 주황 점선을 확인한 뒤 연결 실행을 누르세요.');}};
@@ -428,7 +430,10 @@ window.installBikeTools = function(api) {
   kakao.maps.event.addListener(map,'click',e=>dispatchClick(coord(e.latLng)));
   kakao.maps.event.addListener(map,'rightclick',()=>{if(editing&&['draw','split'].includes(mode))finishCapture();});
   window.addEventListener('keydown',e=>{
-    shift=e.shiftKey||e.ctrlKey||e.metaKey;if(!editing||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||busy)return;
+    shift=e.shiftKey||e.ctrlKey||e.metaKey;
+    if(e.isComposing||e.target.closest?.('input,textarea,select,[contenteditable="true"]')||busy)return;
+    if(!e.ctrlKey&&!e.metaKey&&!e.altKey&&(e.code==='KeyV'||e.key.toLowerCase()==='v')){if(!ready)return;e.preventDefault();if(!editing)start(true);if(commitAttributes())setMode('select');return;}
+    if(!editing)return;
     if(e.key==='Escape'){e.preventDefault();setMode('select');}
     else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}
     else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();save();}

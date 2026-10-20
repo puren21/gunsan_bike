@@ -92,3 +92,5 @@
 #bikeEditorPanel.bike-active-window,#bikeTablePanel.bike-active-window{z-index:1250}#bikeEditDock{z-index:1300}
 
 .bike-connect-preview{padding:5px 8px;background:#fff8e9;border:1px solid #d78713;border-radius:5px;color:#80500a;font:bold 12px/1.5 sans-serif;white-space:nowrap;box-shadow:0 2px 7px #0002;pointer-events:none}
+
+.bike-selected-endpoint{width:14px;height:14px;box-sizing:border-box;border:3px solid #e40078;border-radius:50%;background:white;box-shadow:0 0 0 2px white,0 1px 5px #0005;pointer-events:none}
