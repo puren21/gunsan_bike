@@ -218,15 +218,16 @@ window.installBikeTools = function(api) {
   }
   function paint() {
     removeOverlays();if(!editing)return;
+    const selectionColor=map.getMapTypeId()===kakao.maps.MapTypeId.ROADMAP?'#FF3DBB':'#FFFF00';
     dataset.features.forEach(f=>{
       const picked=selected.has(idOf(f));
       const category=idOf(f)===activeId&&attrDirty?$('bikeRouteCategory').value:api.normalizeCategory(f.properties['구분']||f.properties.GUBUN||f.properties['자전거도로']);
       const color=api.colorForCategory(category);
       G.paths(f).forEach((path,partIndex)=>{
-        line(path,{strokeColor:picked?'#FFFF00':color,strokeWeight:picked?3:4,strokeOpacity:1,zIndex:picked?912:900});
+        line(path,{strokeColor:picked?selectionColor:color,strokeWeight:picked?3:4,strokeOpacity:1,zIndex:picked?912:900});
         if(picked&&mode!=='vertex'&&path.length){
           const ends=path.length>1?[path[0],path[path.length-1]]:[path[0]];
-          ends.forEach(c=>{const dot=document.createElement('span');dot.className='bike-selected-endpoint';dot.setAttribute('aria-hidden','true');const marker=new kakao.maps.CustomOverlay({map,position:point(c),content:dot,xAnchor:.5,yAnchor:.5,zIndex:918});overlays.push(marker);});
+          ends.forEach(c=>{const dot=document.createElement('span');dot.className='bike-selected-endpoint';dot.style.backgroundColor=selectionColor;dot.setAttribute('aria-hidden','true');const marker=new kakao.maps.CustomOverlay({map,position:point(c),content:dot,xAnchor:.5,yAnchor:.5,zIndex:918});overlays.push(marker);});
         }
         const hit=line(path,{strokeColor:'#000000',strokeOpacity:0.01,strokeWeight:14,zIndex:picked?915:905});
         kakao.maps.event.addListener(hit,'mouseover',()=>{if(editing&&mode==='select'){hoveredSelectionLine=hit;map.setCursor('default');}});
