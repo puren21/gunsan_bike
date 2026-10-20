@@ -16845,8 +16845,8 @@ const gunsanStorage = {
       // 미확장 dash, 미개설 shortdash
 
       function isRoadLayerVisibleAtScale(layerId) {
-        // 화면에 맞춘 전체 보기보다 한 단계 확대하면 도로 표시.
-        return map.getLevel() < overviewMapLevel;
+        // 자전거도로는 전체 보기와 모든 축척에서 표시합니다.
+        return true;
 
       }
 
@@ -16858,13 +16858,9 @@ const gunsanStorage = {
           return { base: 1, top: 0.95, inner: 1 };
         }
 
-        // 1:60,000보다 더 축소된 상태에서는 시도만 보임.
+        // 축소한 지도에서도 모든 자전거도로 구분을 표시합니다.
         if (scale > 60000) {
-          return {
-            base: styleKey === "CITY" ? 1.00 : 0.00,
-            top:  styleKey === "CITY" ? 0.95 : 0.00,
-            inner:styleKey === "CITY" ? 0.95 : 0.00
-          };
+          return { base: 1, top: 0.95, inner: 0.95 };
         }
 
         // 1:25,000 ~ 1:60,000:
