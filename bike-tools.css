@@ -88,3 +88,5 @@
 
 #bikeEditorPanel{display:flex;flex-direction:column;overflow:visible;max-height:calc(100dvh - 138px)}#bikeEditorPanel[hidden]{display:none}#bikeEditorPanel>header{position:relative;top:auto;flex:none;margin-bottom:5px}.bike-editor-scroll{min-height:0;overflow:auto;flex:1}#bikeEditorPanel .bike-save-actions{bottom:0;padding-bottom:8px}
 #bikeTablePanel{display:flex;flex-direction:column;overflow:visible}#bikeTablePanel[hidden]{display:none}#bikeTablePanel>header{position:relative;top:auto;flex:none}#bikeTablePanel>.bike-table-actions,#bikeTablePanel>p{flex:none}#bikeTablePanel .bike-table-scroll{flex:1;min-height:0;max-height:none}
+
+#bikeEditorPanel.bike-active-window,#bikeTablePanel.bike-active-window{z-index:1250}#bikeEditDock{z-index:1300}

@@ -45,6 +45,8 @@ window.installBikeTools = function(api) {
   const tablePanel=document.createElement('section');tablePanel.id='bikeTablePanel';tablePanel.hidden=true;tablePanel.setAttribute('aria-label','자전거도로 속성테이블');
   tablePanel.innerHTML='<header><h2>자전거도로 속성테이블</h2><button type="button" id="bikeTableClose" aria-label="속성테이블 닫기">×</button></header><div class="bike-table-actions"><input id="bikeTableSearch" placeholder="노선·속성 검색" aria-label="노선·속성 검색"><span id="bikeTableCount"></span><div class="bike-table-buttons"><button id="bikeTableDelete" type="button" disabled>선택 행 삭제</button><button id="bikeTableSave" type="button">저장</button><button id="bikeTableCancel" type="button" title="마지막 저장 이후의 미저장 변경 취소">취소</button></div></div><p>행 클릭: 선택 · Shift+클릭: 추가 선택 · 삭제·수정은 저장을 눌러 반영합니다. 취소는 마지막 저장 이후의 변경을 되돌립니다.</p><p id="bikeTableMessage" role="status"></p><div class="bike-table-scroll"><table><thead></thead><tbody></tbody></table></div>';
   document.body.append(tablePanel);
+  function focusWindow(target){[panel,tablePanel].forEach(el=>el.classList.toggle('bike-active-window',el===target));}
+  [panel,tablePanel].forEach(el=>el.addEventListener('pointerdown',()=>focusWindow(el)));
   const columns=[['노선명','number'],['구분','자전거도로'],['기점','기점'],['종점','종점'],['도로폭 (m)','도로폭'],['연장 (km)','연장'],['비고','비고']];
   function cellValue(f,key){const p=f.properties;return key==='number'?nameOf(f):key==='자전거도로'?api.normalizeCategory(p['구분']||p.GUBUN||p[key]):key==='기점'?(p['기점']||p['시점']||''):p[key]??'';}
   function tableColumns(){const known=new Set(['number','자전도로명','자전거도로명','NUM','구분','GUBUN','자전거도로','기점','시점','종점','도로폭','연장','비고','특이사항']);return columns.concat([...new Set(dataset.features.flatMap(f=>Object.keys(f.properties)))].filter(k=>!known.has(k)&&!k.startsWith('__')).map(k=>[k,k]));}
@@ -56,7 +58,7 @@ window.installBikeTools = function(api) {
     tablePanel.querySelector('tbody').innerHTML=rows.map(f=>'<tr data-id="'+esc(idOf(f))+'" aria-selected="'+selected.has(idOf(f))+'"><td>'+ (dataset.features.indexOf(f)+1)+'</td>'+cols.map(([,key])=>'<td>'+(key==='자전거도로'?'<select data-key="'+key+'" aria-label="도로 구분">'+categories.map(c=>'<option'+(cellValue(f,key)===c?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select>':'<input data-key="'+esc(key)+'" aria-label="'+esc(key)+'" value="'+esc(String(cellValue(f,key)))+'"'+(key==='연장'?' readonly':'')+'>')+'</td>').join('')+'</tr>').join('');
     $('bikeTableCount').textContent=rows.length+' / '+dataset.features.length+'개 · 선택 '+selected.size+'개';
   }
-  listButton.onclick=()=>{if(!ready)return;if(!commitAttributes())return;tablePanel.hidden=!tablePanel.hidden;listButton.setAttribute('aria-pressed',String(!tablePanel.hidden));renderTable();};
+  listButton.onclick=()=>{if(!ready)return;if(!commitAttributes())return;tablePanel.hidden=!tablePanel.hidden;if(!tablePanel.hidden)focusWindow(tablePanel);listButton.setAttribute('aria-pressed',String(!tablePanel.hidden));renderTable();};
   $('bikeTableClose').onclick=()=>{tablePanel.hidden=true;listButton.setAttribute('aria-pressed','false');};
   $('bikeTableSearch').oninput=renderTable;
   $('bikeTableDelete').onclick=()=>{deleteSelected();renderTable();};
@@ -65,7 +67,7 @@ window.installBikeTools = function(api) {
     if(busy||!savedDataset)return;
     dataset=copy(savedDataset);selected.clear();activeId=null;part=0;stagedImport=null;capture=[];attrDirty=dirty=false;undoStack=[];redoStack=[];
     $('bikePanelImport').value='';$('bikePanelImportStatus').textContent='GeoJSON 파일 선택 후 위의 저장을 누르면 현재 노선을 교체합니다.';
-    setMode('select');fillRoutes();loadAttributes();paint();msg('미저장 변경을 취소하고 마지막 저장 상태로 되돌렸습니다.');
+    setMode('select');fillRoutes();loadAttributes();paint();try{storage.setItem('bike-draft-v3',JSON.stringify({base:baseline,dataset:copy(savedDataset),updated:new Date().toISOString()}));}catch(e){}msg('미저장 변경을 취소하고 마지막 저장 상태로 되돌렸습니다.');
   };
   tablePanel.querySelector('tbody').addEventListener('click',e=>{const row=e.target.closest('tr[data-id]');if(!row)return;if(!editing)start();selectFeature(row.dataset.id,e.shiftKey||e.ctrlKey||e.metaKey);const f=active();if(f)api.showRoute(nameOf(f),copy(f));});
   tablePanel.querySelector('tbody').addEventListener('change',e=>{
