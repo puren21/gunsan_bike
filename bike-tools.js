@@ -165,9 +165,9 @@ window.installBikeTools = function(api) {
     });
     return{type:'FeatureCollection',features:result};
   }
-  function captureState() {return{dataset:copy(dataset),ids:[...selected],activeId,part};}
+  function captureState() {return{dataset:copy(dataset),ids:[...selected],activeId,part,mode};}
   function checkpoint() {undoStack.push(captureState());if(undoStack.length>80)undoStack.shift();redoStack=[];}
-  function loadState(state) {dataset=state.dataset;selected=new Set(state.ids);activeId=state.activeId;part=state.part;dirty=true;attrDirty=false;setMode('select');fillRoutes();loadAttributes();paint();}
+  function loadState(state) {dataset=state.dataset;selected=new Set(state.ids);activeId=state.activeId;part=state.part;dirty=true;attrDirty=false;setMode(state.mode||'select');fillRoutes();loadAttributes();paint();}
   function formValues() {
     const name=$('bikeRouteName').value.trim();if(!name)throw Error('노선명을 입력하세요.');
     const width=$('bikeRouteWidth').value;if(width!==''&&(!Number.isFinite(Number(width))||Number(width)<0))throw Error('도로폭은 0 이상의 숫자여야 합니다.');
@@ -200,9 +200,9 @@ window.installBikeTools = function(api) {
     $('bikeTool-undo').disabled=!undoStack.length&&!attrDirty;$('bikeTool-redo').disabled=!redoStack.length;
     for(const id of ['bikeSaveBtn','bikeStopBtn','bikeEditorClose','bikeEditorBtn'])$(id).disabled=busy;
     panel.setAttribute('aria-busy',String(busy));
-    const text={connect:'떨어진 두 라인을 클릭해 선택하세요. 가까운 끝점 사이의 주황 점선이 새 연결 구간입니다. 연결 실행 후 저장하면 하나의 연속 라인으로 반영됩니다. 속성은 첫 선택 라인을 사용합니다.',merge:'지도에서 합칠 라인을 차례로 클릭하세요. 다시 클릭하면 선택이 해제됩니다. 2개 이상 선택한 뒤 파란 병합 버튼을 누르세요. 속성은 처음 선택한 라인을 사용합니다.',select:'라인을 클릭해 선택하세요. 마우스 드래그는 지도 화면 이동입니다. Shift+클릭: 추가 선택',multi:'라인을 차례로 클릭해 선택을 추가합니다. 다시 클릭하면 선택 해제됩니다. 드래그는 지도 화면 이동입니다.',draw:'시작점부터 모든 입력점이 기존 라인의 끝점·꼭지점·선분에 스냅됩니다 (20px). 초록 표식: 연결 위치 · 클릭: 점 고정 · 우클릭/완료: 라인 생성 · Esc: 취소',vertex:'꼭지점을 끌어 기존 라인 가까이 옮기세요. 초록 표식과 연결 안내가 보이면 놓으세요. 점선은 이동 후 라인 모양입니다. 선 위 클릭: 점 추가 · 꼭지점 우클릭: 삭제',split:'선택한 라인을 가로지르는 절단선을 클릭해 그린 뒤 우클릭 또는 자르기 실행을 누르세요.'};
-    $('bikeGeometryHelp').hidden=mode==='select';$('bikeGeometryHelp').textContent=mode==='select'?'':text[mode]||'';$('bikeToolActions').hidden=!['draw','split','vertex','merge','connect'].includes(mode);$('bikeFinishBtn').hidden=!['draw','split'].includes(mode);$('bikeCancelToolBtn').hidden=!['draw','split','vertex','merge','connect'].includes(mode);$('bikeFinishBtn').textContent=mode==='split'?'자르기 실행':'그리기 완료';
-    $('bikeMergeFinishBtn').hidden=!['merge','connect'].includes(mode);$('bikeMergeFinishBtn').disabled=busy||(mode==='connect'?selected.size!==2:selected.size<2);$('bikeMergeFinishBtn').textContent=mode==='connect'?'두 라인 연결 실행':'선택한 '+selected.size+'개 라인 병합';
+    const text={connect:'연결할 라인을 두 개 이상 클릭하세요. 가까운 끝점끼리 차례로 연결하며 주황 점선으로 새 구간을 표시합니다. 연결 실행 후 저장하면 하나의 연속 라인으로 반영됩니다. 속성은 첫 선택 라인을 사용합니다.',merge:'지도에서 합칠 라인을 차례로 클릭하세요. 다시 클릭하면 선택이 해제됩니다. 2개 이상 선택한 뒤 파란 병합 버튼을 누르세요. 속성은 처음 선택한 라인을 사용합니다.',select:'라인을 클릭해 선택하세요. 마우스 드래그는 지도 화면 이동입니다. Shift+클릭: 추가 선택',multi:'라인을 차례로 클릭해 선택을 추가합니다. 다시 클릭하면 선택 해제됩니다. 드래그는 지도 화면 이동입니다.',draw:'시작점부터 모든 입력점이 기존 라인의 끝점·꼭지점·선분에 스냅됩니다 (20px). 초록 표식: 연결 위치 · 클릭: 점 고정 · 우클릭/완료: 라인 생성 · Esc: 취소',vertex:'꼭지점을 끌어 기존 라인 가까이 옮기세요. 초록 표식과 연결 안내가 보이면 놓으세요. 점선은 이동 후 라인 모양입니다. 선 위 클릭: 점 추가 · 꼭지점 우클릭: 삭제',split:'선택한 라인을 가로지르는 절단선을 클릭해 그린 뒤 우클릭 또는 자르기 실행을 누르세요.'};
+    $('bikeGeometryHelp').hidden=mode==='select';$('bikeGeometryHelp').textContent=mode==='select'?'':text[mode]||'';$('bikeToolActions').hidden=!['draw','split','vertex','merge','connect'].includes(mode);$('bikeFinishBtn').hidden=!['draw','split'].includes(mode);$('bikeCancelToolBtn').hidden=!['draw','split','vertex','merge','connect'].includes(mode);$('bikeFinishBtn').textContent=mode==='split'?'자르기 실행':'그리기 완료';$('bikeCancelToolBtn').textContent=mode==='connect'?'× 닫기':'도구 취소';
+    $('bikeMergeFinishBtn').hidden=!['merge','connect'].includes(mode);$('bikeMergeFinishBtn').disabled=busy||selected.size<2;$('bikeMergeFinishBtn').textContent=mode==='connect'?selected.size+'개 라인 연결 실행':'선택한 '+selected.size+'개 라인 병합';
     const list=$('bikeMergeSelection');list.hidden=!['merge','connect'].includes(mode);
     list.innerHTML=['merge','connect'].includes(mode)?[...selected].map(id=>{const f=dataset.features.find(f=>idOf(f)===id);return f?'<button type="button" data-remove-line="'+esc(id)+'">'+esc(nameOf(f))+' · 라인 '+(dataset.features.indexOf(f)+1)+' ×</button>':'';}).join(''):'';
   }
@@ -226,7 +226,8 @@ window.installBikeTools = function(api) {
         kakao.maps.event.addListener(hit,'rightclick',()=>{kakao.maps.event.preventMap();finishCapture();});
       });
     });
-    if(mode==='connect'&&selected.size===2){try{const preview=connection();line(preview.bridge,{strokeColor:'#FFFFFF',strokeWeight:8,zIndex:929});line(preview.bridge,{strokeColor:'#D78713',strokeWeight:4,strokeStyle:'dash',zIndex:930});const label=document.createElement('div');label.className='bike-connect-preview';label.textContent='연결 구간 '+preview.distance.toFixed(1)+' m · 연결 실행으로 확정';const a=preview.bridge[0],b=preview.bridge[1];const overlay=new kakao.maps.CustomOverlay({map,position:point([(a[0]+b[0])/2,(a[1]+b[1])/2]),content:label,xAnchor:.5,yAnchor:1.5,zIndex:940});overlays.push(overlay);}catch(e){msg(e.message,true);}}
+    if(mode==='connect'&&selected.size>=2){try{const preview=connection();preview.bridges.forEach((bridge,i)=>{if(G.distance(bridge[0],bridge[1])<.0001)return;line(bridge,{strokeColor:'#FFFFFF',strokeWeight:8,zIndex:929});line(bridge,{strokeColor:'#D78713',strokeWeight:4,strokeStyle:'dash',zIndex:930});const label=document.createElement('div');label.className='bike-connect-preview';label.textContent='연결 '+(i+1)+' · '+G.distance(bridge[0],bridge[1]).toFixed(1)+' m';const a=bridge[0],b=bridge[1];const overlay=new kakao.maps.CustomOverlay({map,position:point([(a[0]+b[0])/2,(a[1]+b[1])/2]),content:label,xAnchor:.5,yAnchor:1.5,zIndex:940});overlays.push(overlay);});}catch(e){msg(e.message,true);}}
+
     if(capture.length)line(capture,{strokeColor:mode==='split'?'#D72973':'#1676D2',strokeWeight:4,strokeStyle:'dash',zIndex:920});
     const f=active();if(mode==='vertex'&&f) {
       (G.paths(f)[part]||[]).forEach((c,i)=>{
@@ -285,7 +286,6 @@ window.installBikeTools = function(api) {
   function setMode(next) {
     mode=next;capture=[];captureCursor=null;snapIndicator.setMap(null);map.setCursor(['merge','connect'].includes(mode)?'pointer':['draw','split','vertex'].includes(mode)?'crosshair':'');updateUI();paint();}
   function selectFeature(id,multi=false,partIndex=0) {
-    if(mode==='connect'&&multi&&!selected.has(id)&&selected.size>=2){msg('두 라인만 선택하세요. 선택한 라인을 다시 클릭하면 해제됩니다.',true);return;}
     if(!commitAttributes())return;
     if(multi){if(selected.has(id))selected.delete(id);else selected.add(id);}else selected=new Set([id]);
     activeId=selected.has(id)?id:[...selected][0]||null;part=partIndex;loadAttributes();paint();
@@ -337,18 +337,18 @@ window.installBikeTools = function(api) {
     dataset.features=dataset.features.filter(f=>!selected.has(idOf(f))).concat(merged);activeId=idOf(merged);selected=new Set([activeId]);part=0;dirty=true;setMode('select');fillRoutes();loadAttributes();paint();msg('병합했습니다. 첫 선택 라인의 속성을 사용합니다.'+(parts.length>1?' 떨어진 구간은 '+parts.length+'개 부분으로 유지했습니다.':''));
   }
   function connection() {
-    if(selected.size!==2)throw Error('연결할 라인 두 개를 선택하세요.');
+    if(selected.size<2)throw Error('연결할 라인을 두 개 이상 선택하세요.');
     const chosen=[...selected].map(id=>dataset.features.find(f=>idOf(f)===id));
     const paths=chosen.map(f=>G.merge(G.paths(f)));
     if(paths.some(parts=>parts.length!==1))throw Error('각각 하나로 이어진 라인을 선택하세요. 여러 부분으로 떨어진 노선은 먼저 나누어 선택하세요.');
-    return G.connect(paths[0][0],paths[1][0]);
+    return G.connectMany(paths.map(parts=>parts[0]));
   }
   function connectSelected(){
     if(busy||!commitAttributes())return;
     try{
       const joined=connection(),first=dataset.features.find(f=>idOf(f)===[...selected][0]);
       checkpoint();const feature={type:'Feature',properties:copy(first.properties),geometry:{type:'LineString',coordinates:joined.coordinates}};feature.properties.__bike_id=uid();
-      dataset.features=dataset.features.filter(f=>!selected.has(idOf(f))).concat(feature);activeId=idOf(feature);selected=new Set([activeId]);part=0;dirty=true;setMode('select');fillRoutes();loadAttributes();paint();msg('두 라인을 하나로 연결했습니다. 새 연결 구간 '+joined.distance.toFixed(1)+' m. 첫 라인의 속성을 유지했습니다. 저장 전에는 실행 취소할 수 있습니다.');
+      dataset.features=dataset.features.filter(f=>!selected.has(idOf(f))).concat(feature);activeId=idOf(feature);selected=new Set([activeId]);part=0;dirty=true;setMode('connect');fillRoutes();loadAttributes();paint();msg('선택한 라인을 하나로 연결했습니다. 새 연결 구간 '+joined.distance.toFixed(1)+' m. 첫 라인의 속성을 유지했습니다. 다음 라인을 계속 선택하거나 × 닫기로 종료하세요. 저장 전에는 실행 취소할 수 있습니다.');
     }catch(e){msg(e.message,true);}
   }
   function deleteSelected() {if(!selected.size||!commitAttributes())return;checkpoint();dataset.features=dataset.features.filter(f=>!selected.has(idOf(f)));selected.clear();activeId=null;dirty=true;setMode('select');fillRoutes();loadAttributes();paint();msg('선택 라인을 삭제했습니다. 실행 취소로 복원할 수 있습니다.');}
@@ -378,7 +378,7 @@ window.installBikeTools = function(api) {
       await api.replace(copy(next));dataset=next;savedDataset=copy(next);dirty=attrDirty=false;undoStack=[];redoStack=[];
       lastSaved=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});fillRoutes();loadAttributes();
       if(stop){editing=false;snapIndicator.setMap(null);panel.hidden=true;api.setEditing(false);removeOverlays();map.setCursor('');$('bikeEditorBtn').setAttribute('aria-pressed','false');$('bikeEditorBtn').setAttribute('aria-label','편집 모드 켜기');$('bikeEditorBtn').title='편집 모드 켜기';}
-      else {setMode('select');paint();}
+      else {setMode(mode==='connect'?'connect':'select');paint();}
       msg('도형과 속성을 공용저장소에 저장했습니다. 다른 컴퓨터에서 새로고침하면 같은 노선이 표시됩니다.');return true;
     }catch(e){msg('저장하지 못했습니다: '+e.message,true);return false;}
     finally{busy=false;updateUI();}
@@ -423,7 +423,7 @@ window.installBikeTools = function(api) {
   $('bikeTool-select').title='선택 (V)';$('bikeTool-select').setAttribute('aria-keyshortcuts','v');
   $('bikeTool-merge').title='라인 병합: 누른 뒤 합칠 라인을 선택';
   $('bikeTool-merge').onclick=()=>{if(!editing)start();if(!busy&&commitAttributes()){setMode('merge');msg('합칠 라인을 지도에서 클릭하고 병합 실행 버튼을 누르세요.');}};
-  $('bikeTool-connect').onclick=()=>{if(!ready||busy)return;if(!editing)start(true);if(!busy&&commitAttributes()){setMode('connect');msg('연결할 두 라인을 선택하고 주황 점선을 확인한 뒤 연결 실행을 누르세요.');}};
+  $('bikeTool-connect').onclick=()=>{if(!ready||busy)return;if(!editing)start(true);if(!busy&&commitAttributes()){setMode('connect');msg('연결할 라인을 두 개 이상 선택하고 주황 점선을 확인한 뒤 연결 실행을 누르세요. 연결 기능은 × 닫기로 종료합니다.');}};
   $('bikeMergeFinishBtn').onclick=()=>mode==='connect'?connectSelected():mergeSelected();
   $('bikeMergeSelection').onclick=e=>{const button=e.target.closest('button[data-remove-line]');if(button)selectFeature(button.dataset.removeLine,true);};$('bikeTool-delete').onclick=deleteSelected;$('bikeTool-undo').onclick=undo;$('bikeTool-redo').onclick=redo;
   $('bikeFinishBtn').onclick=finishCapture;$('bikeCancelToolBtn').onclick=()=>setMode('select');

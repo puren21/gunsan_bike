@@ -66,6 +66,17 @@
     }
     return best;
   }
+  function connectMany(input) {
+    if(!Array.isArray(input)||input.length<2)throw Error('두 개 이상의 라인을 선택하세요.');
+    if(input.some(path=>!valid(path)||distance(path[0],path[path.length-1])<0.0001))throw Error('각각 유효한 열린 라인을 선택하세요.');
+    let coordinates=copy(input[0]),remaining=input.slice(1).map(copy),bridges=[],total=0;
+    while(remaining.length){
+      let best=null;
+      remaining.forEach((path,index)=>{const a=coordinates[0],b=coordinates[coordinates.length-1],c=path[0],d=path[path.length-1],gap=Math.min(distance(a,c),distance(a,d),distance(b,c),distance(b,d));if(!best||gap<best.distance)best={index,distance:gap};});
+      const result=connect(coordinates,remaining[best.index]);coordinates=result.coordinates;bridges.push(result.bridge);total+=result.distance;remaining.splice(best.index,1);
+    }
+    return {coordinates,bridges,distance:total};
+  }
   function intersectsBox(path,box) {
     for(let i=1;i<path.length;i++) {
       const a=path[i-1],b=path[i],dx=b[0]-a[0],dy=b[1]-a[1];
@@ -98,6 +109,6 @@
     }
     return vertex||segment;
   }
-  const api={copy,paths,distance,clean,valid,nearest,split,merge,connect,intersectsBox,snapToPaths};
+  const api={copy,paths,distance,clean,valid,nearest,split,merge,connect,connectMany,intersectsBox,snapToPaths};
   root.BikeGeometry=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window==='undefined'?globalThis:window);
