@@ -1,3 +1,12 @@
+/* Collapsible help shared by editor menus. */
+window.addBikeMenuHelp=function(panel,nodes){
+ const header=panel.querySelector('header'),button=document.createElement('button'),box=document.createElement('div');
+ button.type='button';button.className='bike-help-toggle';button.textContent='?';button.title='도움말';button.setAttribute('aria-label','도움말');button.setAttribute('aria-expanded','false');
+ box.id=panel.id+'-help';box.className='bike-menu-help';box.hidden=true;button.setAttribute('aria-controls',box.id);nodes.forEach(node=>box.append(node));
+ header.insertBefore(button,header.querySelector('button'));header.after(box);
+ button.onclick=()=>{box.hidden=!box.hidden;button.setAttribute('aria-expanded',String(!box.hidden));};
+ return box;
+};
 /* Independent, pinnable option windows for digitizing tools. */
 window.installBikeOptionWindows=function(api){
  const names={connect:'라인 연결'},windows=new Map();let help={};
@@ -8,6 +17,7 @@ window.installBikeOptionWindows=function(api){
   el.innerHTML='<header><h2>'+title+' 옵션</h2><button type="button" data-pin aria-pressed="false" title="위치 고정">고정</button><button type="button" data-off>끄기 ×</button></header><div class="bike-options-scroll"><p data-state></p><p data-help></p><div data-parts></div><div data-selection></div><div class="bike-options-actions"><button type="button" data-activate>이 도구 활성화</button><button type="button" data-execute></button></div></div>';
   let saved=null;try{saved=JSON.parse(api.storage.getItem('bike-option-state-'+tool)||'null');}catch(e){}
   if(saved?.pinned){el.dataset.pinned='true';el.querySelector('[data-pin]').setAttribute('aria-pressed','true');el.hidden=!saved.open;}
+  window.addBikeMenuHelp(el,[el.querySelector('[data-state]'),el.querySelector('[data-help]')]);
   document.body.append(el);windows.set(tool,el);api.movable(el,el.querySelector('header'),el.dataset.geometryKey);api.resize(el);
   el.addEventListener('pointerdown',()=>api.focus(el));
   el.querySelector('[data-pin]').onclick=()=>{const pinned=el.dataset.pinned!=='true';el.dataset.pinned=String(pinned);el.querySelector('[data-pin]').setAttribute('aria-pressed',String(pinned));persist(tool,el);};
