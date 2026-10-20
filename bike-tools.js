@@ -87,8 +87,9 @@ window.installBikeTools = function(api) {
     });
     if(element!==dock)new ResizeObserver(()=>{if(!element.hidden&&element.style.left)persist();}).observe(element);
   }
-  function placeDock(){if(storage.getItem('bike-ui-dock-v2'))return;const r=$('normalBtn').getBoundingClientRect(),width=dock.getBoundingClientRect().width;dock.style.left=Math.max(8,r.left-width-10)+'px';dock.style.top=(r.left>=width+18?r.top:r.bottom+10)+'px';}
+  function placeDock(){if(storage.getItem('bike-ui-dock-v2'))return;const r=$('normalBtn').getBoundingClientRect(),width=dock.getBoundingClientRect().width;const fits=r.left-width-10>=280;dock.style.left=(fits?r.left-width-10:Math.min(280,Math.max(8,innerWidth-width-8)))+'px';dock.style.top=(fits?r.top:r.bottom+10)+'px';}
   movable(dock,dock.querySelector('.bike-drag-handle'),'bike-ui-dock-v2');movable(panel,panel.querySelector('header'),'bike-ui-panel');movable(tablePanel,tablePanel.querySelector('header'),'bike-ui-table');
+  const panelScroll=document.createElement('div');panelScroll.className='bike-editor-scroll';[...panel.children].filter(child=>child.tagName!=='HEADER').forEach(child=>panelScroll.append(child));panel.append(panelScroll);
   requestAnimationFrame(placeDock);window.addEventListener('resize',placeDock);
   function edgeResize(element){
     if(element.querySelector(':scope > .bike-resize-edge'))return;element.dataset.bikeEdgeResize='1';element.classList.add('bike-edge-resizable');if(getComputedStyle(element).position==='static')element.style.position='relative';
