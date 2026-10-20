@@ -145,7 +145,7 @@ window.installBikeTools = function(api) {
   kakao.maps.event.addListener(rubberBand,'mousemove',followCursor);
   kakao.maps.event.addListener(rubberBand,'click',event=>{kakao.maps.event.preventMap();dispatchClick(coord(event.latLng));});
   kakao.maps.event.addListener(rubberBand,'rightclick',()=>{kakao.maps.event.preventMap();finishCapture();});
-  document.getElementById('map').addEventListener('mouseleave',()=>{captureCursor=null;rubberBand.setMap(null);snapIndicator.setMap(null);});
+  document.getElementById('map').addEventListener('mouseleave',()=>{clearLineHover();captureCursor=null;rubberBand.setMap(null);snapIndicator.setMap(null);});
   const msg=(text,error=false)=>{ $('bikeTableMessage').textContent=text;$('bikeTableMessage').classList.toggle('error',error);$('bikeEditorMessage').textContent=text;$('bikeEditorMessage').classList.toggle('error',error); };
   const nameOf=f=>String(f.properties.number||f.properties['자전도로명']||f.properties['자전거도로명']||f.properties.NUM||'');
   const idOf=f=>f.properties.__bike_id;
@@ -209,7 +209,10 @@ window.installBikeTools = function(api) {
     const list=$('bikeMergeSelection');list.hidden=!['merge','connect'].includes(mode);
     list.innerHTML=['merge','connect'].includes(mode)?[...selected].map(id=>{const f=dataset.features.find(f=>idOf(f)===id);return f?'<button type="button" data-remove-line="'+esc(id)+'">'+esc(nameOf(f))+' · 라인 '+(dataset.features.indexOf(f)+1)+' ×</button>':'';}).join(''):'';
   }
-  function removeOverlays() {cancelAnimationFrame(vertexDragFrame);vertexDragFrame=0;vertexDragMarker=null;rubberBand.setMap(null);vertexPreview.setMap(null);overlays.forEach(s=>s.setMap(null));overlays=[];markers.forEach(m=>m.setMap(null));markers=[];}
+  let hoveredSelectionLine=null;
+  function toolCursor(){return ['merge','connect'].includes(mode)?'pointer':['draw','split','vertex'].includes(mode)?'crosshair':'';}
+  function clearLineHover(){hoveredSelectionLine=null;map.setCursor(editing?toolCursor():'');}
+  function removeOverlays() {clearLineHover();cancelAnimationFrame(vertexDragFrame);vertexDragFrame=0;vertexDragMarker=null;rubberBand.setMap(null);vertexPreview.setMap(null);overlays.forEach(s=>s.setMap(null));overlays=[];markers.forEach(m=>m.setMap(null));markers=[];}
   function line(path,options={}) {
     const obj=new kakao.maps.Polyline({map,path:path.map(point),strokeColor:'#E60045',strokeWeight:5,zIndex:900,...options});overlays.push(obj);return obj;
   }
@@ -226,6 +229,8 @@ window.installBikeTools = function(api) {
           ends.forEach(c=>{const dot=document.createElement('span');dot.className='bike-selected-endpoint';dot.setAttribute('aria-hidden','true');const marker=new kakao.maps.CustomOverlay({map,position:point(c),content:dot,xAnchor:.5,yAnchor:.5,zIndex:918});overlays.push(marker);});
         }
         const hit=line(path,{strokeColor:'#000000',strokeOpacity:0.01,strokeWeight:14,zIndex:picked?915:905});
+        kakao.maps.event.addListener(hit,'mouseover',()=>{if(editing&&mode==='select'){hoveredSelectionLine=hit;map.setCursor('default');}});
+        kakao.maps.event.addListener(hit,'mouseout',()=>{if(hoveredSelectionLine===hit)clearLineHover();});
         kakao.maps.event.addListener(hit,'mousemove',followCursor);
         kakao.maps.event.addListener(hit,'click',e=>{kakao.maps.event.preventMap();dispatchClick(coord(e.latLng),idOf(f),partIndex);});
         kakao.maps.event.addListener(hit,'rightclick',()=>{kakao.maps.event.preventMap();finishCapture();});
