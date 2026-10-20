@@ -423,7 +423,7 @@ window.installBikeTools = function(api) {
   ['select','draw','vertex','split','multi'].forEach(tool=>$('bikeTool-'+tool).onclick=()=>{if(!editing)start();if(commitAttributes()){setMode(tool);optionWindows?.open(tool);}});
   $('bikeTool-select').title='선택 (V)';$('bikeTool-select').setAttribute('aria-keyshortcuts','v');
   $('bikeTool-merge').title='라인 병합: 누른 뒤 합칠 라인을 선택';
-  $('bikeTool-merge').onclick=()=>{if(!editing)start();if(!busy&&commitAttributes()){setMode('merge');optionWindows?.open('merge');msg('합칠 라인을 지도에서 클릭하고 병합 실행 버튼을 누르세요.');}};
+  $('bikeTool-merge').onclick=()=>{if(!editing)start();if(!busy&&commitAttributes()){if(mode==='merge'&&selected.size>=2){mergeSelected();return;}setMode('merge');msg('합칠 라인을 지도에서 클릭한 뒤 병합 아이콘을 다시 누르세요.');}};
   $('bikeTool-connect').onclick=()=>{if(!ready||busy)return;if(!editing)start(true);if(!busy&&commitAttributes()){setMode('connect');optionWindows?.open('connect');msg('연결할 라인을 두 개 이상 선택하고 주황 점선을 확인한 뒤 연결 실행을 누르세요. 연결 기능은 × 닫기로 종료합니다.');}};
   $('bikeMergeFinishBtn').onclick=()=>mode==='connect'?connectSelected():mergeSelected();
   $('bikeMergeSelection').onclick=e=>{const button=e.target.closest('button[data-remove-line]');if(button)selectFeature(button.dataset.removeLine,true);};$('bikeTool-delete').onclick=deleteSelected;$('bikeTool-undo').onclick=undo;$('bikeTool-redo').onclick=redo;
@@ -456,7 +456,7 @@ window.installBikeTools = function(api) {
     activate(tool){if(!ready||busy)return;if(!editing)start(true);if((tool==='vertex'&&!activeId)||(tool==='split'&&!selected.size)){msg('먼저 라인을 선택하세요.',true);return;}if(commitAttributes()){setMode(tool);optionWindows.open(tool);}},
     deactivate:()=>setMode('select'),finish:finishCapture,merge:mergeSelected,connect:connectSelected,removeSelection:id=>selectFeature(id,true)
   });
-  optionWindows.get('vertex').querySelector('[data-parts]').append($('bikePartLabel'));
+
   let layerEnabled=false;
   function syncOverlay(){map.removeOverlayMapTypeId(kakao.maps.MapTypeId.BICYCLE);map.removeOverlayMapTypeId(kakao.maps.MapTypeId.BICYCLE_HYBRID);if(layerEnabled)map.addOverlayMapTypeId(map.getMapTypeId()===kakao.maps.MapTypeId.ROADMAP?kakao.maps.MapTypeId.BICYCLE:kakao.maps.MapTypeId.BICYCLE_HYBRID);}
   $('bikeLayerBtn').onclick=()=>{layerEnabled=!layerEnabled;$('bikeLayerBtn').setAttribute('aria-pressed',String(layerEnabled));syncOverlay();};kakao.maps.event.addListener(map,'maptypeid_changed',()=>{syncOverlay();if(editing)paint();});

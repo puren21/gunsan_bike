@@ -1,6 +1,6 @@
 /* Independent, pinnable option windows for digitizing tools. */
 window.installBikeOptionWindows=function(api){
- const names={draw:'그리기',vertex:'꼭지점',split:'자르기',multi:'다중 선택',merge:'병합',connect:'라인 연결'},windows=new Map();let help={};
+ const names={connect:'라인 연결'},windows=new Map();let help={};
  function persist(tool,el){api.storage.setItem('bike-option-state-'+tool,JSON.stringify({pinned:el.dataset.pinned==='true',open:!el.hidden}));}
  for(const [index,[tool,title]] of Object.entries(names).entries()){
   const el=document.createElement('section');el.className='bike-tool-options';el.id='bikeOptions-'+tool;el.hidden=true;el.dataset.geometryKey='bike-option-geometry-'+tool;el.dataset.pinned='false';el.setAttribute('aria-label',title+' 옵션');
