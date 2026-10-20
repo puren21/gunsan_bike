@@ -10035,10 +10035,11 @@ const gunsanStorage = {
       if (panel) panel.style.display = "none";
     }
   </script>
-  <link rel="stylesheet" href="bike-tools.css?v=20261020-24">
-  <script src="bike-geometry.js?v=20261020-24"></script>
+  <link rel="stylesheet" href="bike-tools.css?v=20261020-25">
+  <script src="bike-geometry.js?v=20261020-25"></script>
   <script src="cloud-storage.js?v=20261020-1"></script>
-  <script src="bike-tools.js?v=20261020-24"></script>
+  <script src="bike-options.js?v=20261020-25"></script>
+  <script src="bike-tools.js?v=20261020-25"></script>
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"
     onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
 
@@ -10380,11 +10381,14 @@ const gunsanStorage = {
       let mapIdleTimer = null;
       let mapRefreshFrame = null;
 
+      const lastWorkView = (() => {
+        try { const v=JSON.parse(gunsanStorage.getItem('lastWorkView')||'null');return v&&Number.isFinite(v.lat)&&Number.isFinite(v.lng)&&v.lat>=-90&&v.lat<=90&&v.lng>=-180&&v.lng<=180&&Number.isInteger(v.level)&&v.level>=1&&v.level<=14?v:null; } catch(e){return null;}
+      })();
       const map = new kakao.maps.Map(
         document.getElementById("map"),
         {
-          center: new kakao.maps.LatLng(35.9677, 126.7366),
-          level: INITIAL_MAP_LEVEL
+          center: new kakao.maps.LatLng(lastWorkView?lastWorkView.lat:35.9677, lastWorkView?lastWorkView.lng:126.7366),
+          level: lastWorkView?lastWorkView.level:INITIAL_MAP_LEVEL
         }
       );
 
@@ -17301,7 +17305,7 @@ const gunsanStorage = {
 
           if (layerId === "townshipBoundary") {
             createTownshipSelectorLabels();
-            if (!townshipAllBounds.isEmpty()) showTownshipOverview();
+            if (!lastWorkView && !townshipAllBounds.isEmpty()) showTownshipOverview();
           }
 
           updateBoundaryVisibility();
@@ -17370,7 +17374,7 @@ const gunsanStorage = {
           updateRoadDatasetManagerStatus();
         }
         applyRoadVisibility();
-        if (townshipAllBounds.isEmpty() && !allBounds.isEmpty()) map.setBounds(allBounds);
+        if (!lastWorkView && townshipAllBounds.isEmpty() && !allBounds.isEmpty()) map.setBounds(allBounds);
         updateLabels();
       })
       .catch(function (error) {
@@ -25753,6 +25757,11 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
       /*
        * 속성값 처리
        */
+      Promise.all([roadsReadyPromise,townshipBoundaryReadyPromise]).then(function(){
+        if(lastWorkView){map.setLevel(lastWorkView.level);map.setCenter(new kakao.maps.LatLng(lastWorkView.lat,lastWorkView.lng));document.getElementById(lastWorkView.sky?'skyBtn':'normalBtn').click();}
+        function rememberWorkView(){const center=map.getCenter();try{gunsanStorage.setItem('lastWorkView',JSON.stringify({lat:center.getLat(),lng:center.getLng(),level:map.getLevel(),sky:map.getMapTypeId()!==kakao.maps.MapTypeId.ROADMAP}));}catch(e){}}
+        kakao.maps.event.addListener(map,'idle',rememberWorkView);kakao.maps.event.addListener(map,'maptypeid_changed',rememberWorkView);window.addEventListener('pagehide',rememberWorkView);
+      });
       window.installBikeTools({
         map, ready: Promise.all([roadsReadyPromise, townshipBoundaryReadyPromise]),
         categories: BIKE_CATEGORIES, normalizeCategory: normalizeBikeCategory,
