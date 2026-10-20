@@ -9689,7 +9689,7 @@ const gunsanStorage = {
 <li><svg id="legendRi" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#2E9F59" stroke-width="5"/></svg><span>우선도로</span></li>
 <li><svg id="legendFarm" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#D99516" stroke-width="5"/></svg><span>겸용도로(분리)</span></li>
 <li><svg id="legendShared" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#355FCC" stroke-width="5"/></svg><span>겸용도로(비분리)</span></li>
-<li><svg id="legendOther" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#424A53" stroke-width="5"/></svg><span>기타</span></li>
+<li><svg id="legendOther" viewBox="0 0 48 24" aria-hidden="true"><path d="M2 12H46" stroke="#8A8A8A" stroke-width="5"/></svg><span>기타</span></li>
 </ul>
     </div>
   </aside>
@@ -10035,11 +10035,11 @@ const gunsanStorage = {
       if (panel) panel.style.display = "none";
     }
   </script>
-  <link rel="stylesheet" href="bike-tools.css?v=20261020-25">
-  <script src="bike-geometry.js?v=20261020-25"></script>
+  <link rel="stylesheet" href="bike-tools.css?v=20261020-26">
+  <script src="bike-geometry.js?v=20261020-26"></script>
   <script src="cloud-storage.js?v=20261020-1"></script>
-  <script src="bike-options.js?v=20261020-25"></script>
-  <script src="bike-tools.js?v=20261020-25"></script>
+  <script src="bike-options.js?v=20261020-26"></script>
+  <script src="bike-tools.js?v=20261020-26"></script>
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"
     onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
 
@@ -10159,7 +10159,7 @@ const gunsanStorage = {
       };
 
       DEFAULT_STYLES.SHARED = { ...DEFAULT_STYLES.FARM, color:"#355FCC" };
-      DEFAULT_STYLES.OTHER = { ...DEFAULT_STYLES.FARM, color:"#424A53" };
+      DEFAULT_STYLES.OTHER = { ...DEFAULT_STYLES.FARM, color:"#8A8A8A" };
       SKY_ROAD_COLORS.SHARED = "#789CFF";
       SKY_ROAD_COLORS.OTHER = "#C0C7D0";
       for (const key of ["SHARED", "OTHER"]) {
@@ -10193,6 +10193,21 @@ const gunsanStorage = {
           if (stacks) gunsanStorage.setItem("roadLayerStacks", JSON.stringify(stacks));
           gunsanStorage.setItem("bikePaletteVersion", "2026-10-19-reference-1");
         } catch (error) { console.warn("색상 기본값 갱신 실패", error); }
+      }
+
+      // Update the previous default only; retain custom colors.
+      if (gunsanStorage.getItem("bikeOtherGrayVersion") !== "1") {
+        try {
+          for (const storageKey of ["roadStyles", "roadLayerStacks"]) {
+            const saved = JSON.parse(gunsanStorage.getItem(storageKey) || "null");
+            if (saved && saved.OTHER) {
+              const entries = Array.isArray(saved.OTHER) ? saved.OTHER : [saved.OTHER];
+              entries.forEach(item => { if (String(item.color).toUpperCase() === "#424A53") item.color = "#8A8A8A"; });
+              gunsanStorage.setItem(storageKey, JSON.stringify(saved));
+            }
+          }
+          gunsanStorage.setItem("bikeOtherGrayVersion", "1");
+        } catch (error) { console.warn("기타 색상 갱신 실패", error); }
       }
 
       let ROAD_LAYER_STACKS;

@@ -220,9 +220,7 @@ window.installBikeTools = function(api) {
       const category=idOf(f)===activeId&&attrDirty?$('bikeRouteCategory').value:api.normalizeCategory(f.properties['구분']||f.properties.GUBUN||f.properties['자전거도로']);
       const color=api.colorForCategory(category);
       G.paths(f).forEach((path,partIndex)=>{
-        if(picked){line(path,{strokeColor:'#E40078',strokeWeight:13,zIndex:910});line(path,{strokeColor:'#FFFFFF',strokeWeight:9,zIndex:911});}
-        line(path,{strokeColor:color,strokeWeight:picked?5:4,zIndex:picked?912:900});
-        if(picked&&mode!=='vertex'){[path[0],path[path.length-1]].forEach(c=>{const el=document.createElement('div');el.className='bike-selected-endpoint';const marker=new kakao.maps.CustomOverlay({map,position:point(c),content:el,xAnchor:.5,yAnchor:.5,zIndex:918});overlays.push(marker);});}
+        line(path,{strokeColor:picked?'#000000':color,strokeWeight:picked?2:4,zIndex:picked?912:900});
         const hit=line(path,{strokeColor:'#000000',strokeOpacity:0.01,strokeWeight:14,zIndex:picked?915:905});
         kakao.maps.event.addListener(hit,'mousemove',followCursor);
         kakao.maps.event.addListener(hit,'click',e=>{kakao.maps.event.preventMap();dispatchClick(coord(e.latLng),idOf(f),partIndex);});
