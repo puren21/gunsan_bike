@@ -403,7 +403,7 @@ window.installBikeTools = function(api) {
       const bounds=new kakao.maps.LatLngBounds();dataset.features.forEach(f=>G.paths(f).forEach(p=>p.forEach(c=>bounds.extend(point(c)))));
       map.setBounds(bounds,110,panel.getBoundingClientRect().width+35,90,Math.min(300,window.innerWidth*0.24));
     }
-    msg('편집할 라인을 지도에서 클릭하세요. 저장을 누르면 공용저장소에 반영됩니다. 편집 전 도로목록의 공용저장소에 로그인하세요.');
+    msg('편집할 라인을 지도에서 클릭하세요. 저장을 누르면 공용저장소에 반영됩니다. 로그인한 기기에서는 인증을 자동으로 유지합니다.');
   }
   function validateImport(raw) {
     if(!raw||raw.type!=='FeatureCollection'||!Array.isArray(raw.features)||!raw.features.length)throw Error('노선이 포함된 GeoJSON FeatureCollection 파일을 선택하세요.');
