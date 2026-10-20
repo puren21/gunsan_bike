@@ -6,6 +6,7 @@ function harness(loggedIn,conflict=false,expired=false,refreshFailure=false){
  const data={type:'FeatureCollection',features:[]};
  const context={window:{},localStorage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)},fetch:async(url,options)=>{
   calls.push({url,options});
+  if(url.includes('grant_type=password'))return {ok:true,json:async()=>({access_token:'registered-access',refresh_token:'registered-refresh',expires_in:3600,user:{email:'editor@example.invalid'}})};
   if(url.includes('grant_type=refresh_token')&&refreshFailure)throw Error('Network unavailable');
   if(url.includes('grant_type=refresh_token'))return {ok:true,json:async()=>({access_token:'renewed-access',refresh_token:'renewed-refresh',expires_at:Date.now()/1000+3600,user:{email:'editor@example.invalid'}})};
   const write=url.includes('/rpc/');return {ok:!(write&&conflict),status:write&&conflict?400:200,json:async()=>write&&conflict?{message:'다른 컴퓨터에서 먼저 저장했습니다.'}:[{data,revision:write?8:7}]};
@@ -18,3 +19,5 @@ test('failed initial load never permits a blind overwrite',async()=>{const h=har
 test('expired session refreshes before saving',async()=>{const h=harness(true,false,true);await h.cloud.load();await h.cloud.save(h.data);assert.equal(h.calls.find(c=>c.url.includes('/rpc/')).options.headers.Authorization,'Bearer renewed-access');assert.match(h.values.get('gunsan_bike:cloud-session-v1'),/renewed-refresh/);});
 
 test('temporary refresh failure retains login for retry',async()=>{const h=harness(true,false,true,true);await h.cloud.load();await assert.rejects(h.cloud.save(h.data),/로그인 정보는 유지/);assert.equal(h.cloud.loggedIn,true);assert.match(h.values.get('gunsan_bike:cloud-session-v1'),/fixture-refresh/);assert.equal(h.calls.filter(c=>c.url.includes('/rpc/')).length,0);});
+
+test('device registration stores renewable session expiry without password',async()=>{const h=harness(false);await h.cloud.login('editor@example.invalid','fixture-password');const stored=JSON.parse(h.values.get('gunsan_bike:cloud-session-v1'));assert.equal(h.cloud.loggedIn,true);assert.ok(stored.expires_at>Date.now()/1000+3500);assert.equal(JSON.stringify(stored).includes('fixture-password'),false);await h.cloud.load();await h.cloud.save(h.data);assert.equal(h.calls.some(c=>c.url.includes('grant_type=refresh_token')),false);});

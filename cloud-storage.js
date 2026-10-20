@@ -32,11 +32,11 @@ const cloud=window.GunsanCloud={
  async logout(){const current=session;remember(null);if(current)try{await request('/auth/v1/logout',{method:'POST',token:current.access_token});}catch(e){}},
  install(container){
   const section=document.createElement('section');section.className='bike-cloud-settings';
-  section.innerHTML='<h3>공용저장소</h3><p class="bike-cloud-status" role="status"></p><details><summary>로그인 및 연결 설정</summary><form><label>이메일<input name="email" type="email" autocomplete="username" required placeholder="기존 편집 계정 이메일"></label><label>비밀번호<input name="password" type="password" autocomplete="current-password" required></label><button type="submit">로그인</button></form><button type="button" class="bike-cloud-logout">로그아웃</button></details><p>저장 버튼으로 도형·속성을 공용저장소에 저장합니다. 이 기기의 로그인은 자동으로 유지됩니다. 다른 컴퓨터에서도 최초 한 번만 로그인하면 이후 저장 버튼만 누르면 됩니다.</p>';
+  section.innerHTML='<h3>공용저장소</h3><p class="bike-cloud-status" role="status"></p><details><summary>기기 등록 및 연결 설정</summary><form><label>이메일<input name="email" type="email" autocomplete="username" required placeholder="기존 편집 계정 이메일"></label><label>비밀번호<input name="password" type="password" autocomplete="current-password" required></label><button type="submit">이 기기 등록</button></form><button type="button" class="bike-cloud-logout">이 기기 등록 해제</button></details><p>저장 버튼으로 도형·속성을 공용저장소에 저장합니다. 최초 한 번 이 기기를 등록하면 이후 저장 버튼만 누르면 됩니다. 비밀번호는 저장하지 않습니다. 다른 컴퓨터에서도 한 번 등록해 주세요.</p>';
   const status=section.querySelector('.bike-cloud-status'),form=section.querySelector('form'),logout=section.querySelector('.bike-cloud-logout');
-  const update=()=>{status.textContent=(session?'로그인됨 · '+cloud.email:'보기 가능 · 저장하려면 로그인')+(loaded?' · 버전 '+revision:'');form.hidden=!!session;logout.hidden=!session;};
+  const update=()=>{status.textContent=(session?'등록된 기기 · '+cloud.email:'보기 가능 · 저장하려면 이 기기 등록')+(loaded?' · 버전 '+revision:'');form.hidden=!!session;logout.hidden=!session;};
   cloud.subscribe(update);update();container.append(section);
-  form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('button');button.disabled=true;status.textContent='로그인 중…';try{await cloud.login(form.elements.email.value.trim(),form.elements.password.value);form.elements.password.value='';section.querySelector('details').open=false;}catch(e){status.textContent='로그인 실패: '+e.message;}finally{button.disabled=false;}};
+  form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('button');button.disabled=true;status.textContent='기기 등록 중…';try{await cloud.login(form.elements.email.value.trim(),form.elements.password.value);form.elements.password.value='';section.querySelector('details').open=false;}catch(e){status.textContent='기기 등록 실패: '+e.message;}finally{button.disabled=false;}};
   logout.onclick=()=>cloud.logout();
  }
 };
