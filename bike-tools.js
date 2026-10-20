@@ -221,6 +221,10 @@ window.installBikeTools = function(api) {
       const color=api.colorForCategory(category);
       G.paths(f).forEach((path,partIndex)=>{
         line(path,{strokeColor:picked?'#FF3DBB':color,strokeWeight:4,zIndex:picked?912:900});
+        if(picked&&mode!=='vertex'&&path.length){
+          const ends=path.length>1?[path[0],path[path.length-1]]:[path[0]];
+          ends.forEach(c=>{const dot=document.createElement('span');dot.className='bike-selected-endpoint';dot.setAttribute('aria-hidden','true');const marker=new kakao.maps.CustomOverlay({map,position:point(c),content:dot,xAnchor:.5,yAnchor:.5,zIndex:918});overlays.push(marker);});
+        }
         const hit=line(path,{strokeColor:'#000000',strokeOpacity:0.01,strokeWeight:14,zIndex:picked?915:905});
         kakao.maps.event.addListener(hit,'mousemove',followCursor);
         kakao.maps.event.addListener(hit,'click',e=>{kakao.maps.event.preventMap();dispatchClick(coord(e.latLng),idOf(f),partIndex);});
