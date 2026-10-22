@@ -48,7 +48,7 @@ window.installBikeTools = function(api) {
   snapButton.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#8e4b51" stroke-width="2"><path d="M4 4v9a8 8 0 0 0 16 0V4h-5v9a3 3 0 0 1-6 0V4Z"/><path d="M4 8h5m6 0h5"/></svg>';
   dock.querySelector('.bike-digitizing-tools').append(snapButton,listButton);document.body.append(dock);
   const tablePanel=document.createElement('section');tablePanel.id='bikeTablePanel';tablePanel.hidden=true;tablePanel.setAttribute('aria-label','자전거도로 속성테이블');
-  tablePanel.innerHTML='<header><h2>자전거도로 속성테이블</h2><button type="button" id="bikeTableClose" aria-label="속성테이블 닫기">×</button></header><div class="bike-table-actions"><input id="bikeTableSearch" placeholder="노선·속성 검색" aria-label="노선·속성 검색"><span id="bikeTableCount"></span><div class="bike-table-buttons"><button id="bikeTableDelete" type="button" disabled>선택 행 삭제</button><button id="bikeTableSave" type="button">저장</button><button id="bikeTableCancel" type="button" title="마지막 저장 이후의 미저장 변경 취소">취소</button></div></div><p>행 클릭: 선택 · Shift+클릭: 추가 선택 · 삭제·수정은 저장을 눌러 반영합니다. 취소는 마지막 저장 이후의 변경을 되돌립니다.</p><p id="bikeTableMessage" role="status"></p><div class="bike-table-scroll"><table><thead></thead><tbody></tbody></table></div>';
+  tablePanel.innerHTML='<header><h2>자전거도로 속성테이블</h2><button type="button" id="bikeTableClose" aria-label="속성테이블 닫기">×</button></header><div class="bike-table-actions"><input id="bikeTableSearch" placeholder="노선·속성 검색" aria-label="노선·속성 검색"><span id="bikeTableCount"></span><div class="bike-table-buttons"><button id="bikeTableEdit" type="button" aria-label="속성 편집 켜기" title="속성 편집 켜기" aria-pressed="false">✎</button><button id="bikeTableLocate" type="button" disabled>위치로 이동</button><button id="bikeTableDelete" type="button" disabled>선택 행 삭제</button><button id="bikeTableSave" type="button">저장</button><button id="bikeTableCancel" type="button" title="마지막 저장 이후의 미저장 변경 취소">취소</button></div></div><p>행 클릭: 선택 · 위치로 이동: 선택 노선으로 지도 이동 · ✎: 속성 편집 켜기·끄기 · Shift+클릭: 추가 선택 · 삭제·수정은 저장을 눌러 반영합니다. 취소는 마지막 저장 이후의 변경을 되돌립니다.</p><p id="bikeTableMessage" role="status"></p><div class="bike-table-scroll"><table><thead></thead><tbody></tbody></table></div>';
   window.addBikeMenuHelp(tablePanel,[tablePanel.querySelector(':scope > p')]);
   document.body.append(tablePanel);
   function focusWindow(target){document.querySelectorAll('#bikeEditorPanel,#bikeTablePanel,.bike-tool-options').forEach(el=>el.classList.toggle('bike-active-window',el===target));}
@@ -56,7 +56,7 @@ window.installBikeTools = function(api) {
   const columns=[['노선명','number'],['구분','자전거도로'],['기점','기점'],['종점','종점'],['도로폭원 (m)','도로폭원'],['보도폭원 (m)','보도폭원'],['유효폭원 (m)','유효폭원'],['연장 (km)','연장'],['비고','비고']];
   function cellValue(f,key){const p=f.properties;return key==='number'?nameOf(f):key==='자전거도로'?api.normalizeCategory(p['구분']||p.GUBUN||p[key]):key==='기점'?(p['기점']||p['시점']||''):p[key]??'';}
   function tableColumns(){const known=new Set(['number','자전도로명','자전거도로명','NUM','구분','GUBUN','자전거도로','기점','시점','종점','도로폭','도로폭원','보도폭원','유효폭원','차선','차선현황','연장','비고','특이사항']);return columns.concat([...new Set(dataset.features.flatMap(f=>Object.keys(f.properties)))].filter(k=>!known.has(k)&&!k.startsWith('__')).map(k=>[k,k]));}
-  let tableSortKey=null,tableSortDirection=1;
+  let tableSortKey=null,tableSortDirection=1,tableEditing=false;
   const tableCollator=new Intl.Collator('ko',{numeric:true,sensitivity:'base'});
   function renderTable(){
     if(tablePanel.hidden)return;
@@ -65,7 +65,8 @@ window.installBikeTools = function(api) {
     const rows=dataset.features.filter(f=>!query||cols.some(([,k])=>String(cellValue(f,k)).toLowerCase().includes(query)));
     const positions=new Map(dataset.features.map((f,i)=>[f,i]));
     if(tableSortKey)rows.sort((a,b)=>{if(tableSortKey==='#')return tableSortDirection*(positions.get(a)-positions.get(b));const av=cellValue(a,tableSortKey),bv=cellValue(b,tableSortKey),ae=String(av).trim()==='',be=String(bv).trim()==='';if(ae!==be)return ae?1:-1;const numeric=['도로폭원','보도폭원','유효폭원','연장'].includes(tableSortKey)&&!ae&&Number.isFinite(Number(av))&&Number.isFinite(Number(bv));return tableSortDirection*(numeric?Number(av)-Number(bv):tableCollator.compare(String(av),String(bv)))||positions.get(a)-positions.get(b);});
-    tablePanel.querySelector('tbody').innerHTML=rows.map(f=>'<tr data-id="'+esc(idOf(f))+'" aria-selected="'+selected.has(idOf(f))+'"><td>'+ (dataset.features.indexOf(f)+1)+'</td>'+cols.map(([,key])=>'<td>'+(key==='자전거도로'?'<select data-key="'+key+'" aria-label="도로 구분">'+categories.map(c=>'<option'+(cellValue(f,key)===c?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select>':'<input data-key="'+esc(key)+'" aria-label="'+esc(key)+'" value="'+esc(String(cellValue(f,key)))+'"'+(key==='연장'?' readonly':'')+'>')+'</td>').join('')+'</tr>').join('');
+    tablePanel.querySelector('tbody').innerHTML=rows.map(f=>'<tr data-id="'+esc(idOf(f))+'" aria-selected="'+selected.has(idOf(f))+'"><td>'+ (dataset.features.indexOf(f)+1)+'</td>'+cols.map(([,key])=>'<td>'+(key==='자전거도로'?'<select data-key="'+key+'" aria-label="도로 구분">'+categories.map(c=>'<option'+(cellValue(f,key)===c?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select>':'<input data-key="'+esc(key)+'" aria-label="'+esc(key)+'" value="'+esc(String(key==='연장'&&String(cellValue(f,key)).trim()!==''&&Number.isFinite(Number(cellValue(f,key)))?Number(cellValue(f,key)).toFixed(1):cellValue(f,key)))+'"'+(key==='연장'?' readonly':'')+'>')+'</td>').join('')+'</tr>').join('');
+    updateTableEditingUI();
     $('bikeTableCount').textContent=rows.length+' / '+dataset.features.length+'개 · 선택 '+selected.size+'개';
   }
   tablePanel.querySelector('thead').onclick=e=>{const button=e.target.closest('[data-sort]');if(!button)return;const key=button.dataset.sort;tableSortDirection=tableSortKey===key?-tableSortDirection:1;tableSortKey=key;renderTable();};
@@ -89,8 +90,17 @@ window.installBikeTools = function(api) {
   window.openBikeAttributeTable=openAttributeTable;listButton.onclick=openAttributeTable;
   $('bikeTableClose').onclick=()=>{if(tableWindow&&!tableWindow.closed)tableWindow.close();else{tablePanel.hidden=true;listButton.setAttribute('aria-pressed','false');}};
   window.addEventListener('pagehide',()=>{if(tableWindow&&!tableWindow.closed)tableWindow.close();});
+  function updateTableEditingUI(){
+    const button=$('bikeTableEdit');button.setAttribute('aria-pressed',String(tableEditing));button.title=tableEditing?'속성 편집 끄기':'속성 편집 켜기';button.setAttribute('aria-label',button.title);button.disabled=busy||!ready;
+    $('bikeTableLocate').disabled=busy||!selected.size;
+    $('bikeTableDelete').disabled=busy||!tableEditing||!selected.size;
+    tablePanel.querySelectorAll('tbody input').forEach(input=>input.readOnly=!tableEditing||busy||input.dataset.key==='연장');
+    tablePanel.querySelectorAll('tbody select').forEach(input=>input.disabled=!tableEditing||busy);
+  }
+  $('bikeTableEdit').onclick=()=>{if(busy||!ready||!commitAttributes())return;tableEditing=!tableEditing;if(tableEditing&&!editing)start(true);updateTableEditingUI();msg(tableEditing?'속성 편집을 켰습니다. 변경 후 저장을 누르세요.':'속성 편집을 껐습니다. 미저장 변경은 저장 버튼으로 보관하세요.');};
+  $('bikeTableLocate').onclick=()=>{if(!selected.size)return;const bounds=new kakao.maps.LatLngBounds();dataset.features.filter(f=>selected.has(idOf(f))).forEach(f=>G.paths(f).forEach(path=>path.forEach(c=>bounds.extend(point(c)))));if(!bounds.isEmpty())map.setBounds(bounds,90,90,90,90);};
   $('bikeTableSearch').oninput=renderTable;
-  $('bikeTableDelete').onclick=()=>{deleteSelected();renderTable();};
+  $('bikeTableDelete').onclick=()=>{if(tableEditing){deleteSelected();renderTable();}};
   $('bikeTableSave').onclick=()=>save();
   $('bikeTableCancel').onclick=()=>{
     if(busy||!savedDataset)return;
@@ -98,9 +108,9 @@ window.installBikeTools = function(api) {
     $('bikePanelImport').value='';$('bikePanelImportStatus').textContent='GeoJSON 파일 선택 후 위의 저장을 누르면 현재 노선을 교체합니다.';
     setMode('select');fillRoutes();loadAttributes();paint();try{storage.setItem('bike-draft-v3',JSON.stringify({base:baseline,dataset:copy(savedDataset),updated:new Date().toISOString()}));}catch(e){}msg('미저장 변경을 취소하고 마지막 저장 상태로 되돌렸습니다.');
   };
-  tablePanel.querySelector('tbody').addEventListener('click',e=>{const row=e.target.closest('tr[data-id]');if(!row)return;if(!editing)start();selectFeature(row.dataset.id,e.shiftKey||e.ctrlKey||e.metaKey||['merge','connect'].includes(mode));const f=active();if(f&&mode!=='connect')api.showRoute(nameOf(f),copy(f));});
+  tablePanel.querySelector('tbody').addEventListener('click',e=>{const row=e.target.closest('tr[data-id]');if(!row)return;selectFeature(row.dataset.id,e.shiftKey||e.ctrlKey||e.metaKey||['merge','connect'].includes(mode));});
   tablePanel.querySelector('tbody').addEventListener('change',e=>{
-    const row=e.target.closest('tr[data-id]'),key=e.target.dataset.key;if(!row||!key||key==='연장')return;
+    const row=e.target.closest('tr[data-id]'),key=e.target.dataset.key;if(!tableEditing||busy||!row||!key||key==='연장')return;
     const f=dataset.features.find(f=>idOf(f)===row.dataset.id);if(!f)return;
     const value=e.target.value;if(key==='number'&&!value.trim()){msg('노선명을 입력하세요.',true);renderTable();return;}
     if(['도로폭원','보도폭원','유효폭원'].includes(key)&&value!==''&&(!Number.isFinite(Number(value))||Number(value)<0)){msg('폭원은 0 이상의 숫자여야 합니다.',true);renderTable();return;}
@@ -221,7 +231,7 @@ window.installBikeTools = function(api) {
   }
   function updateUI() {
     $('bikeTableBtn').disabled=!ready||busy;
-    $('bikeTableDelete').disabled=busy||!selected.size;$('bikeTableSave').disabled=busy||!ready;$('bikeTableCancel').disabled=busy||(!dirty&&!attrDirty&&!stagedImport&&!capture.length);
+    $('bikeTableDelete').disabled=busy||!tableEditing||!selected.size;updateTableEditingUI();$('bikeTableSave').disabled=busy||!ready;$('bikeTableCancel').disabled=busy||(!dirty&&!attrDirty&&!stagedImport&&!capture.length);
     tablePanel.querySelectorAll('tr[data-id]').forEach(row=>row.setAttribute('aria-selected',String(selected.has(row.dataset.id))));
     if(!tablePanel.hidden)$('bikeTableCount').textContent=tablePanel.querySelectorAll('tbody tr').length+' / '+dataset.features.length+'개 · 선택 '+selected.size+'개';
     $('bikeSelectionState').textContent=selected.size?selected.size+'개 라인 선택'+(active()?' · '+nameOf(active()):''):'선택한 라인 없음';
@@ -262,7 +272,7 @@ window.installBikeTools = function(api) {
         kakao.maps.event.addListener(hit,'mouseout',()=>{if(hoveredSelectionLine===hit)clearLineHover();});
         kakao.maps.event.addListener(hit,'mousemove',followCursor);
         kakao.maps.event.addListener(hit,'click',e=>{kakao.maps.event.preventMap();dispatchClick(coord(e.latLng),idOf(f),partIndex);});
-        kakao.maps.event.addListener(hit,'rightclick',()=>{kakao.maps.event.preventMap();finishCapture();});
+        kakao.maps.event.addListener(hit,'rightclick',e=>{kakao.maps.event.preventMap();if(['draw','split'].includes(mode)&&capture.length)finishCapture();else api.showParcelMenu(e.latLng);});
       });
     });
     if(mode==='connect'&&selected.size>=2){try{const preview=connection();preview.bridges.forEach((bridge,i)=>{if(G.distance(bridge[0],bridge[1])<.0001)return;line(bridge,{strokeColor:'#FFFFFF',strokeWeight:8,zIndex:929});line(bridge,{strokeColor:'#D78713',strokeWeight:4,strokeStyle:'dash',zIndex:930});const label=document.createElement('div');label.className='bike-connect-preview';label.textContent='연결 '+(i+1)+' · '+G.distance(bridge[0],bridge[1]).toFixed(1)+' m';const a=bridge[0],b=bridge[1];const overlay=new kakao.maps.CustomOverlay({map,position:point([(a[0]+b[0])/2,(a[1]+b[1])/2]),content:label,xAnchor:.5,yAnchor:1.5,zIndex:940});overlays.push(overlay);});}catch(e){msg(e.message,true);}}
@@ -450,7 +460,7 @@ window.installBikeTools = function(api) {
     if(await save(wasEditing)){fillRoutes();return true;}
     dataset=previous.dataset;selected=new Set(previous.ids);activeId=previous.activeId;part=previous.part;fillRoutes();loadAttributes();paint();return false;
   }
-  window.bikeEditor={get active(){return editing;},start,validateImport,importData,publishData,
+  window.bikeEditor={get active(){return editing;},get capturesRightClick(){return editing&&['draw','split'].includes(mode)&&capture.length>0;},start,validateImport,importData,publishData,
     exportData(){if(!ready){msg('지도가 준비된 뒤 다시 시도하세요.',true);return;}$('bikeExportBtn').click();},
     selectFromId(id){if(!editing)start();if(dataset.features.some(f=>idOf(f)===id))selectFeature(id);},
     selectFromRoute(name,index=0){if(!editing)start();const candidates=dataset.features.filter(f=>nameOf(f)===name);if(candidates.length)selectFeature(idOf(candidates[Math.min(index,candidates.length-1)]));}
@@ -467,7 +477,7 @@ window.installBikeTools = function(api) {
   $('bikeMergeSelection').onclick=e=>{const button=e.target.closest('button[data-remove-line]');if(button)selectFeature(button.dataset.removeLine,true);};$('bikeTool-delete').onclick=deleteSelected;$('bikeTool-undo').onclick=undo;$('bikeTool-redo').onclick=redo;
   $('bikeFinishBtn').onclick=finishCapture;$('bikeCancelToolBtn').onclick=()=>setMode('select');
   kakao.maps.event.addListener(map,'click',e=>dispatchClick(coord(e.latLng)));
-  kakao.maps.event.addListener(map,'rightclick',()=>{if(editing&&['draw','split'].includes(mode))finishCapture();});
+  kakao.maps.event.addListener(map,'rightclick',()=>{if(editing&&['draw','split'].includes(mode)&&capture.length)finishCapture();});
   window.addEventListener('keydown',e=>{
     shift=e.shiftKey||e.ctrlKey||e.metaKey;
     if(e.isComposing||e.target.closest?.('input,textarea,select,[contenteditable="true"]')||busy)return;

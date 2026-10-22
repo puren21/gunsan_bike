@@ -10035,11 +10035,11 @@ const gunsanStorage = {
       if (panel) panel.style.display = "none";
     }
   </script>
-  <link rel="stylesheet" href="bike-tools.css?v=20261022-2">
+  <link rel="stylesheet" href="bike-tools.css?v=20261022-4">
   <script src="bike-geometry.js?v=20261020-27"></script>
   <script src="cloud-storage.js?v=20261022-2"></script>
   <script src="bike-options.js?v=20261020-34"></script>
-  <script src="bike-tools.js?v=20261022-3"></script>
+  <script src="bike-tools.js?v=20261022-4"></script>
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"
     onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
 
@@ -10973,9 +10973,8 @@ const gunsanStorage = {
       function showParcelContextMenu(position) {
         if (roadWidthMeasureMode) return;
 
-        // 라인편집 세션 중에는 지번보기 메뉴를 절대 열지 않음.
-        // 편집 도구가 활성/비활성인지와 관계없이 라인편집을 종료하기 전까지 적용함.
-        if (roadGeometryEditState) return;
+        // 꼭지점 조작 등 기존 도구가 우클릭을 처리하는 동안만 지번 메뉴를 보류합니다.
+        if (roadGeometryEditState?.toolActive) return;
 
         if (!position || measureMode) return;
 
@@ -11024,7 +11023,7 @@ const gunsanStorage = {
       }
 
       kakao.maps.event.addListener(map, "rightclick", function(mouseEvent) {
-        if (window.bikeEditor && window.bikeEditor.active) return;
+        if (window.bikeEditor?.capturesRightClick) return;
         if (roadWidthMeasureMode) {
           stopRoadWidthMeasure(true);
           return;
@@ -24964,7 +24963,7 @@ const gunsanStorage = {
           popupEditRow("도로폭원", "widthSelected", p["도로폭원"] ?? p["도로폭"] ?? "", "text", null, false, "m") +
           popupEditRow("보도폭원", "sidewalkWidth", p["보도폭원"] ?? "", "text", null, false, "m") +
           popupEditRow("유효폭원", "effectiveWidth", p["유효폭원"] ?? "", "text", null, false, "m") +
-          popupEditRow("연장", "totalLength", formatRoadDataLengthKm(roadGeometryLengthKm(road)), "text", null, true, "km") +
+          popupEditRow("연장", "totalLength", roadGeometryLengthKm(road).toFixed(1), "text", null, true, "km") +
           popupEditRow("기점", "start", p["기점"] || p["시점"] || "", "text") +
           popupEditRow("종점", "end", p["종점"] || "", "text") +
           popupEditRow("특이사항", "specialNote", p["특이사항"] || p["비고"] || "", "text") + '</form>';
@@ -25038,7 +25037,7 @@ const gunsanStorage = {
                 row("도로폭원", current["도로폭원"] ?? current["도로폭"], " m") +
                 row("보도폭원", current["보도폭원"], " m") +
                 row("유효폭원", current["유효폭원"], " m") +
-                row("연장", formatRoadDataLengthKm(roadGeometryLengthKm(road)), " km") +
+                row("연장", roadGeometryLengthKm(road).toFixed(1), " km") +
                 row("기점", current["기점"] || current["시점"]) +
                 row("종점", current["종점"]) +
                 row("특이사항", current["특이사항"] || current["비고"])
@@ -25799,6 +25798,7 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
           if(!bounds.isEmpty()) map.setBounds(bounds, 90, 90, 90, 300);
         },
         storage: gunsanStorage, escape: escapeHTML,
+        showParcelMenu: showParcelContextMenu,
         colorForCategory: function(category) {
           const key = BIKE_STYLE_KEYS[BIKE_CATEGORIES.indexOf(normalizeBikeCategory(category))];
           const top = getRoadLayerStack(key).find(item => item.visible !== false);
