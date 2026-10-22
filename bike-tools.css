@@ -109,3 +109,5 @@
 .bike-selection-label{padding:3px 7px;border:2px solid #ff3dbb;border-radius:5px;background:#fff;color:#172d40;font:bold 12px/1.4 sans-serif;white-space:nowrap;box-shadow:0 1px 5px #0006;pointer-events:none}
 
 #bikeTablePanel>header h2{display:none}#bikeTablePanel>header{justify-content:flex-end;gap:8px}#bikeTableMessage:not(.error){display:none}
+
+#bikeTablePanel>header{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;overflow-x:auto;overflow-y:hidden;padding:3px 0 7px;min-height:35px}#bikeTablePanel>header .bike-table-actions{flex:1 0 auto;min-width:max-content;flex-wrap:nowrap;gap:10px}#bikeTablePanel>header .bike-table-actions input{width:180px;flex:none}#bikeTableCount{white-space:nowrap}#bikeTablePanel>header .bike-table-buttons{flex-wrap:nowrap}#bikeTableClose{flex:none}#bikeTablePanel>header .bike-help-toggle{flex:none!important}
