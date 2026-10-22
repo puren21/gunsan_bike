@@ -269,18 +269,19 @@ window.installBikeTools = function(api) {
     const obj=new kakao.maps.Polyline({map,path:path.map(point),strokeColor:'#E60045',strokeWeight:5,zIndex:900,...options});overlays.push(obj);return obj;
   }
   function paint() {
-    removeOverlays();if(!editing)return;
+    removeOverlays();if(!editing&&!selected.size)return;
     const selectionColor=map.getMapTypeId()===kakao.maps.MapTypeId.ROADMAP?'#FF3DBB':'#FFFF00';
     dataset.features.forEach(f=>{
-      const picked=selected.has(idOf(f));
+      const picked=selected.has(idOf(f));if(!editing&&!picked)return;
       const category=idOf(f)===activeId&&attrDirty?$('bikeRouteCategory').value:api.normalizeCategory(f.properties['구분']||f.properties.GUBUN||f.properties['자전거도로']);
       const color=api.colorForCategory(category);
       G.paths(f).forEach((path,partIndex)=>{
         line(path,{strokeColor:picked?selectionColor:color,strokeWeight:picked?3:4,strokeOpacity:1,zIndex:picked?912:900});
-        if(picked&&mode!=='vertex'&&path.length){
+        if(picked&&(!editing||mode!=='vertex')&&path.length){
           const ends=path.length>1?[path[0],path[path.length-1]]:[path[0]];
           ends.forEach(c=>{const dot=document.createElement('span');dot.className='bike-selected-endpoint';dot.style.backgroundColor=selectionColor;dot.setAttribute('aria-hidden','true');const marker=new kakao.maps.CustomOverlay({map,position:point(c),content:dot,xAnchor:.5,yAnchor:.5,zIndex:918});overlays.push(marker);});
         }
+        if(!editing)return;
         const hit=line(path,{strokeColor:'#000000',strokeOpacity:0.01,strokeWeight:14,zIndex:picked?915:905});
         kakao.maps.event.addListener(hit,'mouseover',()=>{if(editing&&mode==='select'){hoveredSelectionLine=hit;map.setCursor('default');}});
         kakao.maps.event.addListener(hit,'mouseout',()=>{if(hoveredSelectionLine===hit)clearLineHover();});
@@ -289,6 +290,14 @@ window.installBikeTools = function(api) {
         kakao.maps.event.addListener(hit,'rightclick',e=>{kakao.maps.event.preventMap();if(['draw','split'].includes(mode)&&capture.length)finishCapture();else api.showParcelMenu(e.latLng);});
       });
     });
+    const selectedFeature=active();
+    if(selectedFeature&&selected.has(idOf(selectedFeature))){
+      const paths=G.paths(selectedFeature).map(path=>({path,length:path.slice(1).reduce((sum,c,i)=>sum+G.distance(path[i],c),0)})).sort((a,b)=>b.length-a.length);
+      if(paths.length){const {path,length}=paths[0];let remaining=length/2,center=path[0];for(let i=1;i<path.length;i++){const segment=G.distance(path[i-1],path[i]);if(remaining<=segment&&segment>0){const ratio=remaining/segment;center=[path[i-1][0]+(path[i][0]-path[i-1][0])*ratio,path[i-1][1]+(path[i][1]-path[i-1][1])*ratio];break;}remaining-=segment;}
+        const label=document.createElement('div');label.className='bike-selection-label';label.textContent='선택 · '+nameOf(selectedFeature);label.style.borderColor=selectionColor;const badge=new kakao.maps.CustomOverlay({map,position:point(center),content:label,xAnchor:.5,yAnchor:1.7,zIndex:945});overlays.push(badge);
+      }
+    }
+    if(!editing)return;
     if(mode==='connect'&&selected.size>=2){try{const preview=connection();preview.bridges.forEach((bridge,i)=>{if(G.distance(bridge[0],bridge[1])<.0001)return;line(bridge,{strokeColor:'#FFFFFF',strokeWeight:8,zIndex:929});line(bridge,{strokeColor:'#D78713',strokeWeight:4,strokeStyle:'dash',zIndex:930});const label=document.createElement('div');label.className='bike-connect-preview';label.textContent='연결 '+(i+1)+' · '+G.distance(bridge[0],bridge[1]).toFixed(1)+' m';const a=bridge[0],b=bridge[1];const overlay=new kakao.maps.CustomOverlay({map,position:point([(a[0]+b[0])/2,(a[1]+b[1])/2]),content:label,xAnchor:.5,yAnchor:1.5,zIndex:940});overlays.push(overlay);});}catch(e){msg(e.message,true);}}
 
     if(capture.length)line(capture,{strokeColor:mode==='split'?'#D72973':'#1676D2',strokeWeight:4,strokeStyle:'dash',zIndex:920});
@@ -521,7 +530,7 @@ window.installBikeTools = function(api) {
 
   let layerEnabled=false;
   function syncOverlay(){map.removeOverlayMapTypeId(kakao.maps.MapTypeId.BICYCLE);map.removeOverlayMapTypeId(kakao.maps.MapTypeId.BICYCLE_HYBRID);if(layerEnabled)map.addOverlayMapTypeId(map.getMapTypeId()===kakao.maps.MapTypeId.ROADMAP?kakao.maps.MapTypeId.BICYCLE:kakao.maps.MapTypeId.BICYCLE_HYBRID);}
-  $('bikeLayerBtn').onclick=()=>{layerEnabled=!layerEnabled;$('bikeLayerBtn').setAttribute('aria-pressed',String(layerEnabled));syncOverlay();};kakao.maps.event.addListener(map,'maptypeid_changed',()=>{syncOverlay();if(editing)paint();});
+  $('bikeLayerBtn').onclick=()=>{layerEnabled=!layerEnabled;$('bikeLayerBtn').setAttribute('aria-pressed',String(layerEnabled));syncOverlay();};kakao.maps.event.addListener(map,'maptypeid_changed',()=>{syncOverlay();if(editing||selected.size)paint();});
   api.ready.then(async()=>{
     let shared=null;try{shared=await window.GunsanCloud.load();}catch(e){msg('공용저장소 연결 실패: '+e.message+' 게시된 기본 노선을 표시합니다.',true);}
     if(shared)await api.replace(copy(shared));
