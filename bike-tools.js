@@ -48,7 +48,7 @@ window.installBikeTools = function(api) {
   snapButton.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="#8e4b51" stroke-width="2"><path d="M4 4v9a8 8 0 0 0 16 0V4h-5v9a3 3 0 0 1-6 0V4Z"/><path d="M4 8h5m6 0h5"/></svg>';
   dock.querySelector('.bike-digitizing-tools').append(snapButton,listButton);document.body.append(dock);
   const tablePanel=document.createElement('section');tablePanel.id='bikeTablePanel';tablePanel.hidden=true;tablePanel.setAttribute('aria-label','자전거도로 속성테이블');
-  tablePanel.innerHTML='<header><h2>자전거도로 속성테이블</h2><button type="button" id="bikeTableClose" aria-label="속성테이블 닫기">×</button></header><div class="bike-table-actions"><input id="bikeTableSearch" placeholder="노선·속성 검색" aria-label="노선·속성 검색"><span id="bikeTableCount"></span><div class="bike-table-buttons"><button id="bikeTableEdit" type="button" aria-label="속성 편집 켜기" title="속성 편집 켜기" aria-pressed="false">✎</button><button id="bikeTableLocate" type="button" disabled>위치로 이동</button><button id="bikeTableDelete" type="button" disabled>선택 행 삭제</button><button id="bikeTableSave" type="button">저장</button><button id="bikeTableCancel" type="button" title="마지막 저장 이후의 미저장 변경 취소">취소</button></div></div><p>행 클릭: 선택 · 위치로 이동: 선택 노선으로 지도 이동 · ✎: 속성 편집 켜기·끄기 · Shift+클릭: 추가 선택 · 삭제·수정은 저장을 눌러 반영합니다. 취소는 마지막 저장 이후의 변경을 되돌립니다.</p><p id="bikeTableMessage" role="status"></p><div class="bike-table-scroll"><table><thead></thead><tbody></tbody></table></div>';
+  tablePanel.innerHTML='<header><h2>자전거도로 속성테이블</h2><button type="button" id="bikeTableClose" aria-label="속성테이블 닫기">×</button></header><div class="bike-table-actions"><input id="bikeTableSearch" placeholder="노선·속성 검색" aria-label="노선·속성 검색"><span id="bikeTableCount"></span><div class="bike-table-buttons"><button id="bikeTableEdit" type="button" aria-label="속성 편집 켜기" title="속성 편집 켜기" aria-pressed="false">✎</button><button id="bikeTableDelete" type="button" disabled>선택 행 삭제</button><button id="bikeTableSave" type="button">저장</button><button id="bikeTableCancel" type="button" title="마지막 저장 이후의 미저장 변경 취소">취소</button></div></div><p>행 클릭: 선택 및 해당 노선으로 지도 이동 · 열 오른쪽 경계 드래그: 너비 조절 · ✎: 속성 편집 켜기·끄기 · Shift+클릭: 추가 선택 · 삭제·수정은 저장을 눌러 반영합니다. 취소는 마지막 저장 이후의 변경을 되돌립니다.</p><p id="bikeTableMessage" role="status"></p><div class="bike-table-scroll"><table><thead></thead><tbody></tbody></table></div>';
   window.addBikeMenuHelp(tablePanel,[tablePanel.querySelector(':scope > p')]);
   document.body.append(tablePanel);
   function focusWindow(target){document.querySelectorAll('#bikeEditorPanel,#bikeTablePanel,.bike-tool-options').forEach(el=>el.classList.toggle('bike-active-window',el===target));}
@@ -57,6 +57,21 @@ window.installBikeTools = function(api) {
   function cellValue(f,key){const p=f.properties;return key==='number'?nameOf(f):key==='자전거도로'?api.normalizeCategory(p['구분']||p.GUBUN||p[key]):key==='기점'?(p['기점']||p['시점']||''):p[key]??'';}
   function tableColumns(){const known=new Set(['number','자전도로명','자전거도로명','NUM','구분','GUBUN','자전거도로','기점','시점','종점','도로폭','도로폭원','보도폭원','유효폭원','차선','차선현황','연장','비고','특이사항']);return columns.concat([...new Set(dataset.features.flatMap(f=>Object.keys(f.properties)))].filter(k=>!known.has(k)&&!k.startsWith('__')).map(k=>[k,k]));}
   let tableSortKey=null,tableSortDirection=1,tableEditing=false;
+  let columnWidths={};try{columnWidths=JSON.parse(storage.getItem('bike-table-column-widths')||'{}')||{};}catch(e){}
+  const defaultColumnWidth=key=>key==='#'?44:key==='number'||key==='자전거도로'?180:['도로폭원','보도폭원','유효폭원','연장'].includes(key)?130:160;
+  function columnWidth(key){const value=Number(columnWidths[key]);return Number.isFinite(value)?Math.max(key==='#'?40:70,Math.min(1200,value)):defaultColumnWidth(key);}
+  function applyColumnWidths(){let total=0;tablePanel.querySelectorAll('col[data-column]').forEach(col=>{const width=columnWidth(col.dataset.column);col.style.width=width+'px';total+=width;});tablePanel.querySelector('table').style.width=total+'px';tablePanel.querySelectorAll('[data-column-resize]').forEach(handle=>handle.setAttribute('aria-valuenow',String(columnWidth(handle.dataset.columnResize))));}
+  function installColumnWidths(cols){
+    const table=tablePanel.querySelector('table');let group=table.querySelector('colgroup');if(!group){group=document.createElement('colgroup');table.prepend(group);}const keys=['#',...cols.map(([,key])=>key)];group.replaceChildren(...keys.map(key=>{const col=document.createElement('col');col.dataset.column=key;return col;}));
+    tablePanel.querySelectorAll('thead th').forEach((th,i)=>{const handle=document.createElement('span');handle.className='bike-column-resize';handle.dataset.columnResize=keys[i];handle.tabIndex=0;handle.setAttribute('role','separator');handle.setAttribute('aria-orientation','vertical');handle.setAttribute('aria-label',(i===0?'번호':cols[i-1][0])+' 열 너비 조절');handle.title='드래그하여 열 너비 조절';th.append(handle);});applyColumnWidths();
+  }
+  function rememberColumnWidths(){storage.setItem('bike-table-column-widths',JSON.stringify(columnWidths));}
+  tablePanel.querySelector('thead').addEventListener('pointerdown',e=>{
+    const handle=e.target.closest('[data-column-resize]');if(!handle||e.button!==0)return;e.preventDefault();e.stopPropagation();const key=handle.dataset.columnResize,start=e.clientX,width=columnWidth(key);handle.setPointerCapture(e.pointerId);
+    const move=event=>{columnWidths[key]=Math.max(key==='#'?40:70,Math.min(1200,width+event.clientX-start));applyColumnWidths();};
+    const finish=()=>{handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',finish);handle.removeEventListener('pointercancel',finish);rememberColumnWidths();};handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',finish);handle.addEventListener('pointercancel',finish);
+  });
+  tablePanel.querySelector('thead').addEventListener('keydown',e=>{const handle=e.target.closest('[data-column-resize]');if(!handle||!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();e.stopPropagation();const key=handle.dataset.columnResize;columnWidths[key]=Math.max(key==='#'?40:70,Math.min(1200,columnWidth(key)+(e.key==='ArrowRight'?10:-10)));applyColumnWidths();rememberColumnWidths();});
   const tableCollator=new Intl.Collator('ko',{numeric:true,sensitivity:'base'});
   function renderTable(){
     if(tablePanel.hidden)return;
@@ -66,7 +81,7 @@ window.installBikeTools = function(api) {
     const positions=new Map(dataset.features.map((f,i)=>[f,i]));
     if(tableSortKey)rows.sort((a,b)=>{if(tableSortKey==='#')return tableSortDirection*(positions.get(a)-positions.get(b));const av=cellValue(a,tableSortKey),bv=cellValue(b,tableSortKey),ae=String(av).trim()==='',be=String(bv).trim()==='';if(ae!==be)return ae?1:-1;const numeric=['도로폭원','보도폭원','유효폭원','연장'].includes(tableSortKey)&&!ae&&Number.isFinite(Number(av))&&Number.isFinite(Number(bv));return tableSortDirection*(numeric?Number(av)-Number(bv):tableCollator.compare(String(av),String(bv)))||positions.get(a)-positions.get(b);});
     tablePanel.querySelector('tbody').innerHTML=rows.map(f=>'<tr data-id="'+esc(idOf(f))+'" aria-selected="'+selected.has(idOf(f))+'"><td>'+ (dataset.features.indexOf(f)+1)+'</td>'+cols.map(([,key])=>'<td>'+(key==='자전거도로'?'<select data-key="'+key+'" aria-label="도로 구분">'+categories.map(c=>'<option'+(cellValue(f,key)===c?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select>':'<input data-key="'+esc(key)+'" aria-label="'+esc(key)+'" value="'+esc(String(key==='연장'&&String(cellValue(f,key)).trim()!==''&&Number.isFinite(Number(cellValue(f,key)))?Number(cellValue(f,key)).toFixed(1):cellValue(f,key)))+'"'+(key==='연장'?' readonly':'')+'>')+'</td>').join('')+'</tr>').join('');
-    updateTableEditingUI();
+    installColumnWidths(cols);updateTableEditingUI();
     $('bikeTableCount').textContent=rows.length+' / '+dataset.features.length+'개 · 선택 '+selected.size+'개';
   }
   tablePanel.querySelector('thead').onclick=e=>{const button=e.target.closest('[data-sort]');if(!button)return;const key=button.dataset.sort;tableSortDirection=tableSortKey===key?-tableSortDirection:1;tableSortKey=key;renderTable();};
@@ -92,13 +107,12 @@ window.installBikeTools = function(api) {
   window.addEventListener('pagehide',()=>{if(tableWindow&&!tableWindow.closed)tableWindow.close();});
   function updateTableEditingUI(){
     const button=$('bikeTableEdit');button.setAttribute('aria-pressed',String(tableEditing));button.title=tableEditing?'속성 편집 끄기':'속성 편집 켜기';button.setAttribute('aria-label',button.title);button.disabled=busy||!ready;
-    $('bikeTableLocate').disabled=busy||!selected.size;
     $('bikeTableDelete').disabled=busy||!tableEditing||!selected.size;
     tablePanel.querySelectorAll('tbody input').forEach(input=>input.readOnly=!tableEditing||busy||input.dataset.key==='연장');
     tablePanel.querySelectorAll('tbody select').forEach(input=>input.disabled=!tableEditing||busy);
   }
   $('bikeTableEdit').onclick=()=>{if(busy||!ready||!commitAttributes())return;tableEditing=!tableEditing;if(tableEditing&&!editing)start(true);updateTableEditingUI();msg(tableEditing?'속성 편집을 켰습니다. 변경 후 저장을 누르세요.':'속성 편집을 껐습니다. 미저장 변경은 저장 버튼으로 보관하세요.');};
-  $('bikeTableLocate').onclick=()=>{if(!selected.size)return;const bounds=new kakao.maps.LatLngBounds();dataset.features.filter(f=>selected.has(idOf(f))).forEach(f=>G.paths(f).forEach(path=>path.forEach(c=>bounds.extend(point(c)))));if(!bounds.isEmpty())map.setBounds(bounds,90,90,90,90);};
+
   $('bikeTableSearch').oninput=renderTable;
   $('bikeTableDelete').onclick=()=>{if(tableEditing){deleteSelected();renderTable();}};
   $('bikeTableSave').onclick=()=>save();
@@ -108,7 +122,7 @@ window.installBikeTools = function(api) {
     $('bikePanelImport').value='';$('bikePanelImportStatus').textContent='GeoJSON 파일 선택 후 위의 저장을 누르면 현재 노선을 교체합니다.';
     setMode('select');fillRoutes();loadAttributes();paint();try{storage.setItem('bike-draft-v3',JSON.stringify({base:baseline,dataset:copy(savedDataset),updated:new Date().toISOString()}));}catch(e){}msg('미저장 변경을 취소하고 마지막 저장 상태로 되돌렸습니다.');
   };
-  tablePanel.querySelector('tbody').addEventListener('click',e=>{const row=e.target.closest('tr[data-id]');if(!row)return;selectFeature(row.dataset.id,e.shiftKey||e.ctrlKey||e.metaKey||['merge','connect'].includes(mode));});
+  tablePanel.querySelector('tbody').addEventListener('click',e=>{const row=e.target.closest('tr[data-id]');if(!row||busy)return;const id=row.dataset.id,changed=activeId!==id||!selected.has(id);selectFeature(id,e.shiftKey||e.ctrlKey||e.metaKey||['merge','connect'].includes(mode));if(changed&&selected.has(id)){const f=dataset.features.find(f=>idOf(f)===id);if(f){const bounds=new kakao.maps.LatLngBounds();G.paths(f).forEach(path=>path.forEach(c=>bounds.extend(point(c))));if(!bounds.isEmpty())map.setBounds(bounds,90,90,90,90);}}});
   tablePanel.querySelector('tbody').addEventListener('change',e=>{
     const row=e.target.closest('tr[data-id]'),key=e.target.dataset.key;if(!tableEditing||busy||!row||!key||key==='연장')return;
     const f=dataset.features.find(f=>idOf(f)===row.dataset.id);if(!f)return;
