@@ -10712,6 +10712,12 @@ const gunsanStorage = {
         parcelContextPosition = null;
       }
 
+      // 지도 바탕과 노선 위 좌클릭 모두 메뉴를 닫습니다. 메뉴 버튼은 제외합니다.
+      document.getElementById('map').addEventListener('pointerdown', function(event) {
+        if (event.button !== 0 || event.target.closest?.('.parcel-context-menu')) return;
+        closeParcelContextMenu();
+      }, true);
+
       function setParcelCadastralOverlayVisible(visible) {
         const districtCheck = document.getElementById("districtCheck");
 
@@ -12961,7 +12967,6 @@ const gunsanStorage = {
       // SDK는 바탕지도 라벨 자체의 DOM/클릭 이벤트를 노출하지 않으므로,
       // 클릭 좌표 반경 내 카카오 Places 결과 중 가장 가까운 장소를 사용함.
       kakao.maps.event.addListener(map, "click", function(event) {
-        if (window.bikeEditor && window.bikeEditor.active) return;
         // 일반 왼쪽 클릭에서는 지번/장소 팝업을 새로 띄우지 않음.
         // 기존 지번보기 상태가 있으면 팝업과 연속지적도를 함께 종료.
         closeParcelContextMenu();
@@ -12970,6 +12975,7 @@ const gunsanStorage = {
           closeBasePlacePopup();
         }
 
+        if (window.bikeEditor && window.bikeEditor.active) return;
         if (measureMode || roadviewMode) return;
         if (Date.now() < suppressBasePlaceClickUntil) return;
 
