@@ -20,12 +20,17 @@ async function token(){
  if(!refreshing)refreshing=request('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:{refresh_token:session.refresh_token}}).then(remember).catch(e=>{if(e.status===400||e.status===401){remember(null);throw Error('로그인이 만료되었습니다. 다시 로그인하세요.');}throw Error('로그인 연결을 갱신하지 못했습니다. 잠시 후 저장을 다시 누르세요. 로그인 정보는 유지됩니다.');}).finally(()=>refreshing=null);
  await refreshing;return session.access_token;
 }
+function normalizeWidths(data){
+ if(!data||!Array.isArray(data.features))return data;
+ return {...data,features:data.features.map(f=>{const p={...f.properties};p['도로폭원']=p['도로폭원']??p['도로폭']??'';p['보도폭원']=p['보도폭원']??'';p['유효폭원']=p['유효폭원']??'';delete p['도로폭'];delete p['차선'];delete p['차선현황'];return {...f,properties:p};})};
+}
 const cloud=window.GunsanCloud={
+ normalizeData:normalizeWidths,
  get revision(){return revision;},get loggedIn(){return !!session;},get email(){return session?.user?.email||'';},
  subscribe(fn){listeners.add(fn);},
- async load(){const rows=await request('/rest/v1/gunsan_bike_datasets?id=eq.gunsan_bike&select=data,revision,updated_at');const row=rows[0];revision=row?Number(row.revision):0;loaded=true;notify();return row?.data||null;},
+ async load(){const rows=await request('/rest/v1/gunsan_bike_datasets?id=eq.gunsan_bike&select=data,revision,updated_at');const row=rows[0];revision=row?Number(row.revision):0;loaded=true;notify();return normalizeWidths(row?.data||null);},
  async save(data){if(!loaded)throw Error('공용 노선을 확인하지 못했습니다. 작업을 내보낸 뒤 새로고침하세요.');const access=await token();
- const rows=await request('/rest/v1/rpc/save_gunsan_bike',{method:'POST',token:access,body:{p_data:data,p_revision:revision}});
+ const rows=await request('/rest/v1/rpc/save_gunsan_bike',{method:'POST',token:access,body:{p_data:normalizeWidths(data),p_revision:revision}});
  if(!rows?.[0])throw Error('공용저장소의 저장 확인을 받지 못했습니다.');revision=Number(rows[0].revision);notify();return rows[0];
  },
  async login(email,password){const next=await request('/auth/v1/token?grant_type=password',{method:'POST',body:{email,password}});remember(next);},

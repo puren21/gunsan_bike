@@ -10037,9 +10037,9 @@ const gunsanStorage = {
   </script>
   <link rel="stylesheet" href="bike-tools.css?v=20261020-34">
   <script src="bike-geometry.js?v=20261020-27"></script>
-  <script src="cloud-storage.js?v=20261020-3"></script>
+  <script src="cloud-storage.js?v=20261022-1"></script>
   <script src="bike-options.js?v=20261020-34"></script>
-  <script src="bike-tools.js?v=20261020-35"></script>
+  <script src="bike-tools.js?v=20261022-1"></script>
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"
     onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
 
@@ -20040,6 +20040,8 @@ const gunsanStorage = {
         } else {
           values.lane = data.get("laneSelected") || data.get("lane") || "";
           values.width = data.get("widthSelected") || data.get("width") || "";
+          values.sidewalkWidth = data.get("sidewalkWidth") ?? "";
+          values.effectiveWidth = data.get("effectiveWidth") ?? "";
           values.length = formatRoadDataLengthKm(roadGeometryLengthKm(road));
           values.start = data.get("start") || "";
           values.end = data.get("end") || "";
@@ -20315,8 +20317,10 @@ const gunsanStorage = {
             delete props["개설여부"];
             delete props["기타"];
           }
-          if (values.lane !== undefined) setPropertyValue(props, ["차선"], "차선", values.lane);
-          if (values.width !== undefined) setPropertyValue(props, ["도로폭"], "도로폭", values.width);
+          delete props["차선"];delete props["차선현황"];
+          if (values.width !== undefined) { props["도로폭원"]=values.width;delete props["도로폭"]; }
+          if (values.sidewalkWidth !== undefined) props["보도폭원"]=values.sidewalkWidth;
+          if (values.effectiveWidth !== undefined) props["유효폭원"]=values.effectiveWidth;
           if (values.length !== undefined) setPropertyValue(props, ["연장"], "연장", values.length);
           if (values.start !== undefined) setPropertyValue(props, ["기점"], "기점", values.start);
           if (values.end !== undefined) setPropertyValue(props, ["종점"], "종점", values.end);
@@ -21121,6 +21125,8 @@ const gunsanStorage = {
         } else {
           values.lane = data.get("laneSelected") || data.get("lane") || "";
           values.width = data.get("widthSelected") || data.get("width") || "";
+          values.sidewalkWidth = data.get("sidewalkWidth") ?? "";
+          values.effectiveWidth = data.get("effectiveWidth") ?? "";
           values.length = formatRoadDataLengthKm(roadGeometryLengthKm(road));
           values.start = data.get("start") || "";
           values.end = data.get("end") || "";
@@ -22631,7 +22637,7 @@ const gunsanStorage = {
         function summary(properties, fallbackLabel) {
           properties = properties || {};
           const lane = safe(properties["차선"]);
-          const width = safe(properties["도로폭"]);
+          const width = safe(properties["도로폭원"] ?? properties["도로폭"]);
           const status = safe(
             properties["기타"] ||
             properties.Opened ||
@@ -22639,8 +22645,9 @@ const gunsanStorage = {
           );
           return (
             '<strong>' + escapeHTML(fallbackLabel) + '</strong>' +
-            '차선 ' + escapeHTML(lane) +
-            ' · 도로폭 ' + escapeHTML(width) +
+            '도로폭원 ' + escapeHTML(width) +
+            ' · 보도폭원 ' + escapeHTML(safe(properties['보도폭원'])) +
+            ' · 유효폭원 ' + escapeHTML(safe(properties['유효폭원'])) +
             ''
           );
         }
@@ -23585,6 +23592,8 @@ const gunsanStorage = {
           } else {
             attributeValues.lane = editData.get("laneSelected") || editData.get("lane") || "";
             attributeValues.width = editData.get("widthSelected") || editData.get("width") || "";
+          attributeValues.sidewalkWidth = editData.get("sidewalkWidth") ?? "";
+          attributeValues.effectiveWidth = editData.get("effectiveWidth") ?? "";
             attributeValues.length = formatRoadDataLengthKm(roadGeometryLengthKm(road));
             attributeValues.start = editData.get("start") || "";
             attributeValues.end = editData.get("end") || "";
@@ -24951,7 +24960,9 @@ const gunsanStorage = {
         return '<form id="roadEditForm" class="popup-inline-edit-form">' +
           popupEditRow("노선명", "number", group.number, "text", null, true) +
           popupEditRow("구분", "gubun", bikeCategory(p), "select", BIKE_CATEGORIES) +
-          popupEditRow("도로폭", "widthSelected", p["도로폭"] || "", "text", null, false, "m") +
+          popupEditRow("도로폭원", "widthSelected", p["도로폭원"] ?? p["도로폭"] ?? "", "text", null, false, "m") +
+          popupEditRow("보도폭원", "sidewalkWidth", p["보도폭원"] ?? "", "text", null, false, "m") +
+          popupEditRow("유효폭원", "effectiveWidth", p["유효폭원"] ?? "", "text", null, false, "m") +
           popupEditRow("연장", "totalLength", formatRoadDataLengthKm(roadGeometryLengthKm(road)), "text", null, true, "km") +
           popupEditRow("기점", "start", p["기점"] || p["시점"] || "", "text") +
           popupEditRow("종점", "end", p["종점"] || "", "text") +
@@ -25023,8 +25034,9 @@ const gunsanStorage = {
               : (
                 row("노선명", getNumber(current, group.layerId)) +
                 row("구분", bikeCategory(current)) +
-                row("차선현황", current["차선"]) +
-                row("도로폭", current["도로폭"], current["도로폭"] !== undefined && String(current["도로폭"]).trim() !== "" ? " m" : "") +
+                row("도로폭원", current["도로폭원"] ?? current["도로폭"], " m") +
+                row("보도폭원", current["보도폭원"], " m") +
+                row("유효폭원", current["유효폭원"], " m") +
                 row("연장", formatRoadDataLengthKm(roadGeometryLengthKm(road)), " km") +
                 row("기점", current["기점"] || current["시점"]) +
                 row("종점", current["종점"]) +
