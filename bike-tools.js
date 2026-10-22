@@ -2,7 +2,8 @@
 window.installBikeTools = function(api) {
   'use strict';
   const G=window.BikeGeometry, {map,storage,categories}=api, copy=G.copy;
-  const $=id=>document.getElementById(id), esc=api.escape;
+  let tableWindow=null;
+  const $=id=>document.getElementById(id)||(!tableWindow?.closed&&tableWindow?.document.getElementById(id)), esc=api.escape;
   let optionWindows=null;
   const root=document.createElement('div');root.id='bikeControls';
   root.innerHTML='<button id="bikeLayerBtn" type="button" title="카카오 자전거도로 레이어" aria-label="카카오 자전거도로 레이어" aria-pressed="false">🚲</button>'+ '<button id="bikeEditorBtn" type="button" title="편집 모드 켜기" aria-label="편집 모드 켜기" aria-pressed="false">✎<span>편집</span></button>';
@@ -55,16 +56,39 @@ window.installBikeTools = function(api) {
   const columns=[['노선명','number'],['구분','자전거도로'],['기점','기점'],['종점','종점'],['도로폭원 (m)','도로폭원'],['보도폭원 (m)','보도폭원'],['유효폭원 (m)','유효폭원'],['연장 (km)','연장'],['비고','비고']];
   function cellValue(f,key){const p=f.properties;return key==='number'?nameOf(f):key==='자전거도로'?api.normalizeCategory(p['구분']||p.GUBUN||p[key]):key==='기점'?(p['기점']||p['시점']||''):p[key]??'';}
   function tableColumns(){const known=new Set(['number','자전도로명','자전거도로명','NUM','구분','GUBUN','자전거도로','기점','시점','종점','도로폭','도로폭원','보도폭원','유효폭원','차선','차선현황','연장','비고','특이사항']);return columns.concat([...new Set(dataset.features.flatMap(f=>Object.keys(f.properties)))].filter(k=>!known.has(k)&&!k.startsWith('__')).map(k=>[k,k]));}
+  let tableSortKey=null,tableSortDirection=1;
+  const tableCollator=new Intl.Collator('ko',{numeric:true,sensitivity:'base'});
   function renderTable(){
     if(tablePanel.hidden)return;
     const cols=tableColumns(),query=$('bikeTableSearch').value.toLowerCase();
-    tablePanel.querySelector('thead').innerHTML='<tr><th>#</th>'+cols.map(([label])=>'<th>'+esc(label)+'</th>').join('')+'</tr>';
+    tablePanel.querySelector('thead').innerHTML='<tr><th aria-sort="'+(tableSortKey==='#'?(tableSortDirection===1?'ascending':'descending'):'none')+'"><button type="button" data-sort="#">#'+(tableSortKey==='#'?(tableSortDirection===1?' ▲':' ▼'):' ↕')+'</button></th>'+cols.map(([label,key])=>'<th aria-sort="'+(tableSortKey===key?(tableSortDirection===1?'ascending':'descending'):'none')+'"><button type="button" data-sort="'+esc(key)+'">'+esc(label)+(tableSortKey===key?(tableSortDirection===1?' ▲':' ▼'):' ↕')+'</button></th>').join('')+'</tr>';
     const rows=dataset.features.filter(f=>!query||cols.some(([,k])=>String(cellValue(f,k)).toLowerCase().includes(query)));
+    const positions=new Map(dataset.features.map((f,i)=>[f,i]));
+    if(tableSortKey)rows.sort((a,b)=>{if(tableSortKey==='#')return tableSortDirection*(positions.get(a)-positions.get(b));const av=cellValue(a,tableSortKey),bv=cellValue(b,tableSortKey),ae=String(av).trim()==='',be=String(bv).trim()==='';if(ae!==be)return ae?1:-1;const numeric=['도로폭원','보도폭원','유효폭원','연장'].includes(tableSortKey)&&!ae&&Number.isFinite(Number(av))&&Number.isFinite(Number(bv));return tableSortDirection*(numeric?Number(av)-Number(bv):tableCollator.compare(String(av),String(bv)))||positions.get(a)-positions.get(b);});
     tablePanel.querySelector('tbody').innerHTML=rows.map(f=>'<tr data-id="'+esc(idOf(f))+'" aria-selected="'+selected.has(idOf(f))+'"><td>'+ (dataset.features.indexOf(f)+1)+'</td>'+cols.map(([,key])=>'<td>'+(key==='자전거도로'?'<select data-key="'+key+'" aria-label="도로 구분">'+categories.map(c=>'<option'+(cellValue(f,key)===c?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select>':'<input data-key="'+esc(key)+'" aria-label="'+esc(key)+'" value="'+esc(String(cellValue(f,key)))+'"'+(key==='연장'?' readonly':'')+'>')+'</td>').join('')+'</tr>').join('');
     $('bikeTableCount').textContent=rows.length+' / '+dataset.features.length+'개 · 선택 '+selected.size+'개';
   }
-  listButton.onclick=()=>{if(!ready)return;if(!commitAttributes())return;tablePanel.hidden=!tablePanel.hidden;if(!tablePanel.hidden)focusWindow(tablePanel);listButton.setAttribute('aria-pressed',String(!tablePanel.hidden));renderTable();};
-  $('bikeTableClose').onclick=()=>{tablePanel.hidden=true;listButton.setAttribute('aria-pressed','false');};
+  tablePanel.querySelector('thead').onclick=e=>{const button=e.target.closest('[data-sort]');if(!button)return;const key=button.dataset.sort;tableSortDirection=tableSortKey===key?-tableSortDirection:1;tableSortKey=key;renderTable();};
+  function restoreTableWindow(){
+    if(tablePanel.ownerDocument!==document)document.body.append(tablePanel);
+    tablePanel.hidden=true;listButton.setAttribute('aria-pressed','false');tableWindow=null;
+  }
+  function openAttributeTable(){
+    if(!ready||!commitAttributes())return;
+    if(tableWindow&&!tableWindow.closed){tableWindow.focus();return;}
+    const popup=window.open('','gunsanBikeAttributes','popup=yes,width=1200,height=620,resizable=yes,scrollbars=yes');
+    tablePanel.hidden=false;listButton.setAttribute('aria-pressed','true');
+    if(!popup){focusWindow(tablePanel);renderTable();msg('팝업이 차단되어 지도 안에 열었습니다. 브라우저에서 이 사이트의 팝업을 허용하면 별도 창으로 열 수 있습니다.');return;}
+    tableWindow=popup;const doc=popup.document;doc.title='군산시 자전거도로 속성테이블';doc.documentElement.lang='ko';doc.head.replaceChildren();
+    const meta=doc.createElement('meta');meta.name='viewport';meta.content='width=device-width,initial-scale=1';doc.head.append(meta);
+    const stylesheet=doc.createElement('link');stylesheet.rel='stylesheet';stylesheet.href=document.querySelector('link[href*="bike-tools.css"]').href;doc.head.append(stylesheet);
+    const style=doc.createElement('style');style.textContent='html,body{height:100%;margin:0;background:#fff}#bikeTablePanel{position:relative!important;inset:auto!important;transform:none!important;width:100%!important;height:100dvh!important;max-width:none!important;max-height:none!important;min-width:0!important;min-height:0!important;margin:0!important;border:0!important;border-radius:0!important;box-sizing:border-box;resize:none!important}#bikeTablePanel>header{cursor:default}#bikeTablePanel>.bike-resize-edge{display:none}.bike-table-actions{flex-wrap:wrap}';doc.head.append(style);
+    doc.body.replaceChildren(tablePanel);renderTable();popup.addEventListener('beforeunload',restoreTableWindow,{once:true});
+    popup.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();doc.activeElement?.blur();save();}});popup.focus();
+  }
+  window.openBikeAttributeTable=openAttributeTable;listButton.onclick=openAttributeTable;
+  $('bikeTableClose').onclick=()=>{if(tableWindow&&!tableWindow.closed)tableWindow.close();else{tablePanel.hidden=true;listButton.setAttribute('aria-pressed','false');}};
+  window.addEventListener('pagehide',()=>{if(tableWindow&&!tableWindow.closed)tableWindow.close();});
   $('bikeTableSearch').oninput=renderTable;
   $('bikeTableDelete').onclick=()=>{deleteSelected();renderTable();};
   $('bikeTableSave').onclick=()=>save();
@@ -88,11 +112,11 @@ window.installBikeTools = function(api) {
     const saved=(()=>{try{return JSON.parse(storage.getItem(key)||'null');}catch(e){return null;}})();
     if(saved){element.style.left=Math.max(0,Math.min(saved.left,innerWidth-100))+'px';element.style.top=Math.max(0,Math.min(saved.top,innerHeight-60))+'px';element.style.right='auto';element.style.bottom='auto';if(saved.width&&element!==dock)element.style.width=Math.min(saved.width,innerWidth-16)+'px';if(saved.height)element.style.height=Math.min(saved.height,innerHeight-16)+'px';if(element!==dock)element.style.maxHeight=Math.max(190,innerHeight-parseFloat(element.style.top)-8)+'px';}
     const persist=()=>{const r=element.getBoundingClientRect();if(r.width&&r.height)storage.setItem(key,JSON.stringify({left:r.left,top:r.top,width:r.width,height:element===dock?undefined:r.height}));};
-    handle.addEventListener('pointerdown',e=>{if(element.dataset.pinned==='true')return;if(e.button!==0||e.target.closest('button,input,select'))return;e.preventDefault();const r=element.getBoundingClientRect(),x=e.clientX,y=e.clientY;handle.setPointerCapture(e.pointerId);handle.style.touchAction='none';
+    handle.addEventListener('pointerdown',e=>{if(element.ownerDocument!==document||element.dataset.pinned==='true')return;if(e.button!==0||e.target.closest('button,input,select'))return;e.preventDefault();const r=element.getBoundingClientRect(),x=e.clientX,y=e.clientY;handle.setPointerCapture(e.pointerId);handle.style.touchAction='none';
       const move=v=>{element.style.left=Math.max(0,Math.min(innerWidth-80,r.left+v.clientX-x))+'px';element.style.top=Math.max(0,Math.min(innerHeight-45,r.top+v.clientY-y))+'px';element.style.right='auto';element.style.bottom='auto';if(element!==dock)element.style.maxHeight=Math.max(190,innerHeight-parseFloat(element.style.top)-8)+'px';};
       const up=()=>{handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',up);handle.removeEventListener('pointercancel',up);persist();};handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',up);handle.addEventListener('pointercancel',up);
     });
-    if(element!==dock)new ResizeObserver(()=>{if(!element.hidden&&element.style.left)persist();}).observe(element);
+    if(element!==dock)new ResizeObserver(()=>{if(element.ownerDocument===document&&!element.hidden&&element.style.left)persist();}).observe(element);
   }
   function placeDock(){if(storage.getItem('bike-ui-dock-v2'))return;const r=$('normalBtn').getBoundingClientRect(),width=dock.getBoundingClientRect().width;const fits=r.left-width-10>=280;dock.style.left=(fits?r.left-width-10:Math.min(280,Math.max(8,innerWidth-width-8)))+'px';dock.style.top=(fits?r.top:r.bottom+10)+'px';}
   movable(dock,dock.querySelector('.bike-drag-handle'),'bike-ui-dock-v2');movable(panel,panel.querySelector('header'),'bike-ui-panel');movable(tablePanel,tablePanel.querySelector('header'),'bike-ui-table');
