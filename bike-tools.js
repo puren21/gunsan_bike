@@ -79,7 +79,7 @@ window.installBikeTools = function(api) {
     const popup=window.open('','gunsanBikeAttributes','popup=yes,width=1200,height=620,resizable=yes,scrollbars=yes');
     tablePanel.hidden=false;listButton.setAttribute('aria-pressed','true');
     if(!popup){focusWindow(tablePanel);renderTable();msg('팝업이 차단되어 지도 안에 열었습니다. 브라우저에서 이 사이트의 팝업을 허용하면 별도 창으로 열 수 있습니다.');return;}
-    tableWindow=popup;const doc=popup.document;doc.title='군산시 자전거도로 속성테이블';doc.documentElement.lang='ko';doc.head.replaceChildren();
+    tableWindow=popup;const doc=popup.document;doc.documentElement.lang='ko';doc.head.replaceChildren();doc.title='군산시 자전거도로 속성테이블';
     const meta=doc.createElement('meta');meta.name='viewport';meta.content='width=device-width,initial-scale=1';doc.head.append(meta);
     const stylesheet=doc.createElement('link');stylesheet.rel='stylesheet';stylesheet.href=document.querySelector('link[href*="bike-tools.css"]').href;doc.head.append(stylesheet);
     const style=doc.createElement('style');style.textContent='html,body{height:100%;margin:0;background:#fff}#bikeTablePanel{position:relative!important;inset:auto!important;transform:none!important;width:100%!important;height:100dvh!important;max-width:none!important;max-height:none!important;min-width:0!important;min-height:0!important;margin:0!important;border:0!important;border-radius:0!important;box-sizing:border-box;resize:none!important}#bikeTablePanel>header{cursor:default}#bikeTablePanel>.bike-resize-edge{display:none}.bike-table-actions{flex-wrap:wrap}';doc.head.append(style);
