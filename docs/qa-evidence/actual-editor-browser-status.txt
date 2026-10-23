@@ -1,0 +1,3 @@
+Browser: localhost:8080, live Kakao SDK and tiles, synthetic routes only.
+A/B initialized at revision 7. A attribute save -> 8. B rejected with original input retained and GeoJSON exported. A vertex drag save -> 9. B retry rejected. New tab offered previous draft export; exported content matches B.
+Township layer enabled on real Kakao map with lightweight static GeoJSON.

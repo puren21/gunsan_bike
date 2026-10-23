@@ -1,0 +1,29 @@
+<!doctype html><html lang="ko"><head><meta http-equiv="Content-Security-Policy" content="connect-src 'self'; form-action 'self'; object-src 'none'">
+<script>
+// Also fail closed if someone serves this file without local-qa-server.py.
+const qaPageFetch=window.fetch.bind(window);
+window.fetch=(input,options)=>{
+ const target=new URL(typeof input==='string'?input:input.url,location.href);
+ if(target.origin!==location.origin)return Promise.reject(Error('연습 환경: 외부 API 연결 차단'));
+ return qaPageFetch(input,options);
+};
+</script><meta charset="utf-8"><title>군산 도로 · 분리된 저장 검증</title>
+<style>body{font:16px/1.65 system-ui;margin:40px auto;max-width:900px;padding:0 24px;color:#172033;background:#f4f7fb}header{padding:20px;background:#fff;border-top:5px solid #9f1239;border-radius:12px}section{background:white;padding:24px;margin-top:20px;border-radius:12px}label{display:block}input{font:inherit;width:90%;padding:10px}button{padding:10px 16px;margin:12px 8px 12px 0;font:inherit;cursor:pointer}pre{white-space:pre-wrap;background:#edf2f7;padding:16px;font-size:14px}#message{color:#9f1239;font-weight:bold}h1{margin:0}small{display:block;color:#58677b}</style></head>
+<body><header><h1>분리된 저장 검증</h1><p>이 화면은 합성 노선과 이 컴퓨터의 임시 DB만 사용합니다. 운영 Supabase 연결은 차단되어 있습니다.</p><small>지도 편집 화면과 별도로 실제 cloud-storage.js의 버전·캐시·저장 동작을 확인합니다.</small></header>
+<section><h2 id="screen"></h2><p id="version" role="status">불러오는 중…</p><label for="note">연습용 노선 비고</label><input id="note" disabled><button id="save" disabled>연습 DB에 저장</button><button id="restore">보관된 초안 확인</button><p id="message" role="status"></p><p id="draft"></p></section>
+<section><h2>연습 DB 및 요청 기록</h2><button id="inspect">기록 확인</button><pre id="requests">확인 중…</pre></section>
+<script src="/cloud-storage.js"></script><script>
+'use strict';
+if(!['127.0.0.1','localhost'].includes(location.hostname))throw Error('Local QA only');
+const $=id=>document.getElementById(id);let dataset=null,dirty=false,busy=false;
+$('screen').textContent='독립 작업 화면 '+location.port;
+const backupKey='gunsan_bike:local-qa-draft-v1';
+async function inspect(){const r=await fetch('/__qa__/status');const s=await r.json();$('requests').textContent=JSON.stringify(s,null,2);}
+async function init(){dataset=await GunsanCloud.load();$('version').textContent='편집 기준 버전 '+GunsanCloud.revision;$('note').value=dataset.features[0].properties['비고']||'';$('note').disabled=false;$('save').disabled=false;await inspect();}
+$('note').oninput=()=>{dirty=true;$('message').textContent='미저장 작업이 있습니다.';};
+$('save').onclick=async()=>{if(busy||!dataset)return;busy=true;$('save').disabled=true;try{dataset.features[0].properties['비고']=$('note').value;localStorage.setItem(backupKey,JSON.stringify({revision:GunsanCloud.revision,dataset}));await GunsanCloud.save(dataset);localStorage.removeItem(backupKey);dirty=false;$('version').textContent='편집 기준 버전 '+GunsanCloud.revision;$('message').textContent='저장 성공 · 연습 DB에만 반영했습니다.';}catch(e){$('message').textContent='저장 거부 · '+e.message;}finally{busy=false;$('save').disabled=false;await inspect();}};
+$('restore').onclick=()=>{const draft=localStorage.getItem(backupKey);$('draft').textContent=draft?'보호된 미저장 초안: '+JSON.parse(draft).dataset.features[0].properties['비고']:'보관된 초안 없음';};
+$('inspect').onclick=inspect;
+addEventListener('beforeunload',e=>{if(dirty||busy){e.preventDefault();e.returnValue='';}});
+init().catch(e=>$('message').textContent=e.message);
+</script></body></html>
