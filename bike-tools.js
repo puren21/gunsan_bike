@@ -512,7 +512,7 @@ window.installBikeTools = function(api) {
     else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();save();}
     else if(e.key==='Delete'){e.preventDefault();deleteSelected();}
   });window.addEventListener('keyup',e=>{shift=e.shiftKey||e.ctrlKey||e.metaKey;});window.addEventListener('blur',()=>{shift=false;});
-  window.addEventListener('beforeunload',e=>{if(dirty||attrDirty||capture.length){e.preventDefault();e.returnValue='';}});
+  window.addEventListener('beforeunload',e=>{if(busy||dirty||attrDirty||stagedImport||capture.length){e.preventDefault();e.returnValue='';}});
   $('bikeExportBtn').onclick=()=>{
     if(!commitAttributes())return;try{const data=prepareData(),url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/geo+json'})),a=document.createElement('a');a.href=url;a.download='gunsan_bike_roads.geojson';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){msg(e.message,true);}
   };
@@ -537,7 +537,7 @@ window.installBikeTools = function(api) {
     if(shared)await api.replace(copy(shared));
     const raw=shared||api.read(),oldFingerprint=fingerprint(raw);serverDataset=normalize(raw);baseline=fingerprint(serverDataset);dataset=copy(serverDataset);let olderDraft=null;
     const text=storage.getItem('bike-draft-v3')||storage.getItem('bike-draft-v2');
-    if(text){const draft=JSON.parse(text);if(draft.base===baseline||draft.base===oldFingerprint){dataset=normalize(draft.dataset);await api.replace(copy(dataset));}else {olderDraft=normalize(draft.dataset);msg('게시 데이터가 변경되어 이전 편집본을 자동 복원하지 않았습니다. 이전 브라우저 편집본 내보내기로 백업할 수 있습니다.',true);}}
+    if(text){const draft=JSON.parse(text);if(draft.base===baseline||draft.base===oldFingerprint){dataset=normalize(draft.dataset);dirty=true;await api.replace(copy(dataset));}else {olderDraft=normalize(draft.dataset);msg('게시 데이터가 변경되어 이전 편집본을 자동 복원하지 않았습니다. 이전 브라우저 편집본 내보내기로 백업할 수 있습니다.',true);}}
     if(olderDraft){const backup=document.createElement('button');backup.type='button';backup.textContent='이전 브라우저 편집본 내보내기';backup.onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(olderDraft,null,2)],{type:'application/geo+json'})),a=document.createElement('a');a.href=url;a.download='gunsan_previous_browser_draft.geojson';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};panel.querySelector('.bike-file-menu').append(backup);}
     savedDataset=copy(dataset);ready=true;fillRoutes();updateUI();
   }).catch(e=>{msg('편집 데이터를 준비하지 못했습니다: '+e.message,true);console.error(e);});
