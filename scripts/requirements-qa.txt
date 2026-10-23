@@ -1,0 +1,2 @@
+# Used only by the offline boundary generator/validator, never by the website.
+shapely==2.0.7

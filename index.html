@@ -10037,9 +10037,9 @@ const gunsanStorage = {
   </script>
   <link rel="stylesheet" href="bike-tools.css?v=20261022-8">
   <script src="bike-geometry.js?v=20261020-27"></script>
-  <script src="cloud-storage.js?v=20261022-2"></script>
+  <script src="cloud-storage.js?v=20261023-cache-v1"></script>
   <script src="bike-options.js?v=20261020-34"></script>
-  <script src="bike-tools.js?v=20261022-8"></script>
+  <script src="bike-tools.js?v=20261023-cache-v1"></script>
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"
     onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
 
@@ -10349,7 +10349,7 @@ const gunsanStorage = {
 
       const BOUNDARY_LAYERS = {
         cityBoundary: {
-          files: ["City Boundary.geojson"],
+          files: ["data/display/city-v1.geojson?v=22cc418484e2", "City Boundary.geojson"],
           visible: false,
           maxScale: Infinity,
           strokeColor: "#3F4852",
@@ -10360,7 +10360,7 @@ const gunsanStorage = {
           shapes: []
         },
         townshipBoundary: {
-          files: ["Township Boundary.geojson"],
+          files: ["data/display/township-v1.geojson?v=3d6490165828", "Township Boundary.geojson"],
           overviewShapes: [],
           detailLoaded: false,
           detailLoadingPromise: null,
@@ -17172,7 +17172,7 @@ const gunsanStorage = {
         if (layer.detailLoaded) return;
         if (layer.detailLoadingPromise) return layer.detailLoadingPromise;
         layer.detailLoadingPromise = (async function() {
-          const loaded = await fetchFirstAvailableGeoJSON(["Township Boundary.geojson"]);
+          const loaded = await fetchFirstAvailableGeoJSON(["data/display/township-v1.geojson?v=3d6490165828", "Township Boundary.geojson"]);
           const shapes = [];
           loaded.data.features.forEach(function(feature) {
             addTownshipBoundaryLines(feature, shapes);
@@ -17281,7 +17281,7 @@ const gunsanStorage = {
         let lastError = null;
         for (const file of fileCandidates) {
           try {
-            const response = await fetch(encodeURI(file), { cache: "default" });
+            const response = await fetch(encodeURI(file), { cache: file.startsWith("data/display/") ? "force-cache" : "no-cache" });
             if (!response.ok) throw new Error(file + " HTTP " + response.status);
             const data = await response.json();
             if (!data || data.type !== "FeatureCollection" || !Array.isArray(data.features)) {

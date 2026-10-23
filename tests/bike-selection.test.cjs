@@ -16,7 +16,7 @@ test('popup contains only clicked line attributes and geometry length even with 
  const a=road('a',1,{number:'공통 노선','구분':'A','도로폭':3,'기점':'A 시작','종점':'A 끝','비고':'A 비고'}),b=road('b',2,{number:'공통 노선','구분':'B','도로폭':9,'기점':'B 시작','종점':'B 끝','비고':'B 비고'});
  const ctx={roadEditSessionGroupKey:null,escapeHTML:String,roadPopupTitleTools:()=>'',row:(k,v,u='')=>`${k}:${v??'-'}${u}|`,bikeCategory:p=>p['구분'],getNumber:p=>p.number,getRoadStatusKey:()=> 'NORMAL',roadGeometryLengthKm:r=>r.length,formatRoadDataLengthKm:String,roadLineEditBlock:()=>'',routeMemoBlock:()=>'',roadPopupActions:()=>''};
  const popup=load('groupPopup',ctx)({key:'route',number:'공통 노선',layerId:'rural',propertiesList:[a.properties,b.properties],roads:[a,b]},b);
- for(const value of ['구분:B','도로폭:9 m','연장:2 km','기점:B 시작','종점:B 끝'])assert(popup.includes(value),value);
+ for(const value of ['구분:B','도로폭원:9 m','연장:2.0 km','기점:B 시작','종점:B 끝'])assert(popup.includes(value),value);
  assert(popup.includes('B 비고'));assert(!popup.includes('A 시작'));assert(!popup.includes('총연장'));assert(!popup.includes('선택구간'));
 });
 test('explicit clicked line wins over nearest-line lookup at shared split endpoints',()=>{

@@ -1,0 +1,340 @@
+TAP version 13
+# Subtest: snap preview is visible before the first drawing click without a rubber band
+ok 1 - snap preview is visible before the first drawing click without a rubber band
+  ---
+  duration_ms: 1.344041
+  ...
+# Subtest: every drawing click snaps: first endpoint, interior segment and final endpoint
+ok 2 - every drawing click snaps: first endpoint, interior segment and final endpoint
+  ---
+  duration_ms: 1.97475
+  ...
+# Subtest: draw preserves the user snap preference: false
+ok 3 - draw preserves the user snap preference: false
+  ---
+  duration_ms: 0.424042
+  ...
+# Subtest: draw preserves the user snap preference: true
+ok 4 - draw preserves the user snap preference: true
+  ---
+  duration_ms: 0.384917
+  ...
+# Subtest: vertex preserves the user snap preference: false
+ok 5 - vertex preserves the user snap preference: false
+  ---
+  duration_ms: 0.365667
+  ...
+# Subtest: vertex preserves the user snap preference: true
+ok 6 - vertex preserves the user snap preference: true
+  ---
+  duration_ms: 0.328541
+  ...
+# Subtest: cut keeps both sides and an identical shared endpoint
+ok 7 - cut keeps both sides and an identical shared endpoint
+  ---
+  duration_ms: 2.529792
+  ...
+# Subtest: cut at an existing vertex creates two, not empty duplicate parts
+ok 8 - cut at an existing vertex creates two, not empty duplicate parts
+  ---
+  duration_ms: 0.928166
+  ...
+# Subtest: touching the first endpoint does not split
+ok 9 - touching the first endpoint does not split
+  ---
+  duration_ms: 0.127083
+  ...
+# Subtest: two intersections make three ordered parts
+ok 10 - two intersections make three ordered parts
+  ---
+  duration_ms: 0.139042
+  ...
+# Subtest: disjoint cutter leaves geometry intact
+ok 11 - disjoint cutter leaves geometry intact
+  ---
+  duration_ms: 0.134209
+  ...
+# Subtest: merge handles reversed endpoints without adding a bridge
+ok 12 - merge handles reversed endpoints without adding a bridge
+  ---
+  duration_ms: 0.235459
+  ...
+# Subtest: disconnected lines retain separate parts
+ok 13 - disconnected lines retain separate parts
+  ---
+  duration_ms: 0.089542
+  ...
+# Subtest: branching junction is not arbitrarily joined
+ok 14 - branching junction is not arbitrarily joined
+  ---
+  duration_ms: 0.061458
+  ...
+# Subtest: nearest split location interpolates on line
+ok 15 - nearest split location interpolates on line
+  ---
+  duration_ms: 0.325375
+  ...
+# Subtest: geometry operations do not mutate their inputs
+ok 16 - geometry operations do not mutate their inputs
+  ---
+  duration_ms: 0.653917
+  ...
+# Subtest: box selection includes crossing segment with both vertices outside
+ok 17 - box selection includes crossing segment with both vertices outside
+  ---
+  duration_ms: 0.155333
+  ...
+# Subtest: box selection includes a line fully inside
+ok 18 - box selection includes a line fully inside
+  ---
+  duration_ms: 0.156584
+  ...
+# Subtest: box selection rejects line outside rectangle
+ok 19 - box selection rejects line outside rectangle
+  ---
+  duration_ms: 0.118042
+  ...
+# Subtest: box selection includes boundary touch without bounding-box false positive
+ok 20 - box selection includes boundary touch without bounding-box false positive
+  ---
+  duration_ms: 0.061458
+  ...
+# Subtest: snap includes interior vertices, not only endpoints
+ok 21 - snap includes interior vertices, not only endpoints
+  ---
+  duration_ms: 0.124458
+  ...
+# Subtest: snap projects onto a segment away from vertices
+ok 22 - snap projects onto a segment away from vertices
+  ---
+  duration_ms: 0.046417
+  ...
+# Subtest: snap respects screen pixel tolerance at different projections
+ok 23 - snap respects screen pixel tolerance at different projections
+  ---
+  duration_ms: 0.084083
+  ...
+# Subtest: moving vertex does not snap back to itself or adjacent segments
+ok 24 - moving vertex does not snap back to itself or adjacent segments
+  ---
+  duration_ms: 0.077792
+  ...
+# Subtest: cutting at a snapped segment point splits exactly there
+ok 25 - cutting at a snapped segment point splits exactly there
+  ---
+  duration_ms: 0.070584
+  ...
+# Subtest: connect bridges closest endpoints and keeps both complete paths
+ok 26 - connect bridges closest endpoints and keeps both complete paths
+  ---
+  duration_ms: 0.923958
+  ...
+# Subtest: connect can reverse first path to use closest pair
+ok 27 - connect can reverse first path to use closest pair
+  ---
+  duration_ms: 0.0995
+  ...
+# Subtest: connect touching endpoints avoids duplicate vertex
+ok 28 - connect touching endpoints avoids duplicate vertex
+  ---
+  duration_ms: 0.083375
+  ...
+# Subtest: connect rejects closed or invalid paths
+ok 29 - connect rejects closed or invalid paths
+  ---
+  duration_ms: 0.295834
+  ...
+# Subtest: connectMany joins three unordered reversed paths without losing vertices
+ok 30 - connectMany joins three unordered reversed paths without losing vertices
+  ---
+  duration_ms: 0.220042
+  ...
+# Subtest: connectMany handles touching paths and distant extensions as a single chain
+ok 31 - connectMany handles touching paths and distant extensions as a single chain
+  ---
+  duration_ms: 0.08075
+  ...
+# Subtest: connectMany rejects less than two paths or a closed component
+ok 32 - connectMany rejects less than two paths or a closed component
+  ---
+  duration_ms: 0.058458
+  ...
+# Subtest: merge tool opens with no selection; confirmation requires two lines
+ok 33 - merge tool opens with no selection; confirmation requires two lines
+  ---
+  duration_ms: 1.827042
+  ...
+# Subtest: map clicks add and remove merge targets without modifier keys
+ok 34 - map clicks add and remove merge targets without modifier keys
+  ---
+  duration_ms: 1.681333
+  ...
+# Subtest: explicit merge preserves first attributes and connected geometry
+ok 35 - explicit merge preserves first attributes and connected geometry
+  ---
+  duration_ms: 1.3235
+  ...
+# Subtest: explicit merge preserves first attributes and disconnected parts
+ok 36 - explicit merge preserves first attributes and disconnected parts
+  ---
+  duration_ms: 1.055792
+  ...
+# Subtest: only the selected split line changes color, opacity and stacking; switching restores its sibling
+ok 37 - only the selected split line changes color, opacity and stacking; switching restores its sibling
+  ---
+  duration_ms: 1.243209
+  ...
+# Subtest: popup contains only clicked line attributes and geometry length even with the same route name
+ok 38 - popup contains only clicked line attributes and geometry length even with the same route name
+  ---
+  duration_ms: 0.641417
+  ...
+# Subtest: explicit clicked line wins over nearest-line lookup at shared split endpoints
+ok 39 - explicit clicked line wins over nearest-line lookup at shared split endpoints
+  ---
+  duration_ms: 0.66025
+  ...
+# Subtest: native marker movement updates snap preview using frames without a drag event
+ok 40 - native marker movement updates snap preview using frames without a drag event
+  ---
+  duration_ms: 2.924708
+  ...
+# Subtest: display preserves all features, properties and vertices: City Boundary.geojson
+ok 41 - display preserves all features, properties and vertices: City Boundary.geojson
+  ---
+  duration_ms: 117.466166
+  ...
+# Subtest: display preserves all features, properties and vertices: Township Boundary.geojson
+ok 42 - display preserves all features, properties and vertices: Township Boundary.geojson
+  ---
+  duration_ms: 110.573834
+  ...
+# Subtest: tiny island rings stay nondegenerate and shared source coordinates map identically
+ok 43 - tiny island rings stay nondegenerate and shared source coordinates map identically
+  ---
+  duration_ms: 659.226417
+  ...
+# Subtest: read loads shared version; save sends expected revision and advances only on success
+ok 44 - read loads shared version; save sends expected revision and advances only on success
+  ---
+  duration_ms: 1.421125
+  ...
+# Subtest: anonymous viewer cannot send a save request
+ok 45 - anonymous viewer cannot send a save request
+  ---
+  duration_ms: 0.54725
+  ...
+# Subtest: conflicting save preserves revision and surfaces error
+ok 46 - conflicting save preserves revision and surfaces error
+  ---
+  duration_ms: 1.03375
+  ...
+# Subtest: failed initial load never permits a blind overwrite
+ok 47 - failed initial load never permits a blind overwrite
+  ---
+  duration_ms: 0.377792
+  ...
+# Subtest: expired session refreshes before saving
+ok 48 - expired session refreshes before saving
+  ---
+  duration_ms: 0.548292
+  ...
+# Subtest: temporary refresh failure retains login for retry
+ok 49 - temporary refresh failure retains login for retry
+  ---
+  duration_ms: 0.402333
+  ...
+# Subtest: device registration stores renewable session expiry without password
+ok 50 - device registration stores renewable session expiry without password
+  ---
+  duration_ms: 0.456792
+  ...
+# Subtest: width schema preserves geometry and unrelated attributes and removes lane fields
+ok 51 - width schema preserves geometry and unrelated attributes and removes lane fields
+  ---
+  duration_ms: 0.374166
+  ...
+# Subtest: failed save protects draft and unsaved state: 다른 컴퓨터에서 먼저 저장했습니다.
+ok 52 - failed save protects draft and unsaved state: 다른 컴퓨터에서 먼저 저장했습니다.
+  ---
+  duration_ms: 8.277459
+  ...
+# Subtest: failed save protects draft and unsaved state: offline
+ok 53 - failed save protects draft and unsaved state: offline
+  ---
+  duration_ms: 0.863792
+  ...
+# Subtest: failed save protects draft and unsaved state: 로그인이 만료되었습니다.
+ok 54 - failed save protects draft and unsaved state: 로그인이 만료되었습니다.
+  ---
+  duration_ms: 0.34625
+  ...
+# Subtest: draft quota failure prevents remote save
+ok 55 - draft quota failure prevents remote save
+  ---
+  duration_ms: 0.328875
+  ...
+# Subtest: navigation warns on unsaved geometry, attributes, captured points, import and pending save
+ok 56 - navigation warns on unsaved geometry, attributes, captured points, import and pending save
+  ---
+  duration_ms: 1.482959
+  ...
+# Subtest: legacy v2 draft with matching baseline restores and remains unsaved for navigation guard
+ok 57 - legacy v2 draft with matching baseline restores and remains unsaved for navigation guard
+  ---
+  duration_ms: 0.641958
+  ...
+# Subtest: incompatible old draft is retained for export without replacing latest server data
+ok 58 - incompatible old draft is retained for export without replacing latest server data
+  ---
+  duration_ms: 0.659792
+  ...
+# Subtest: cold load fetches metadata and full data; next device uses verified cache without full transfer
+ok 59 - cold load fetches metadata and full data; next device uses verified cache without full transfer
+  ---
+  duration_ms: 1.734625
+  ...
+# Subtest: new revision replaces cache; metadata/data race uses revision delivered with data
+ok 60 - new revision replaces cache; metadata/data race uses revision delivered with data
+  ---
+  duration_ms: 1.390208
+  ...
+# Subtest: malformed, unknown schema and invalid data caches are ignored
+ok 61 - malformed, unknown schema and invalid data caches are ignored
+  ---
+  duration_ms: 3.280167
+  ...
+# Subtest: quota failure is harmless; returned copies cannot mutate cached editor baseline
+ok 62 - quota failure is harmless; returned copies cannot mutate cached editor baseline
+  ---
+  duration_ms: 0.547125
+  ...
+# Subtest: offline metadata never authorizes cached save and preserves cache/draft
+ok 63 - offline metadata never authorizes cached save and preserves cache/draft
+  ---
+  duration_ms: 2.388834
+  ...
+# Subtest: two computers conflict without overwriting original; failed editor retains baseline and draft
+ok 64 - two computers conflict without overwriting original; failed editor retains baseline and draft
+  ---
+  duration_ms: 1.882167
+  ...
+# Subtest: single-flight initialization and concurrent save guard avoid duplicate writes
+ok 65 - single-flight initialization and concurrent save guard avoid duplicate writes
+  ---
+  duration_ms: 0.767916
+  ...
+# Subtest: missing or incompatible remote revision/data fails closed without clearing draft
+ok 66 - missing or incompatible remote revision/data fails closed without clearing draft
+  ---
+  duration_ms: 1.871167
+  ...
+1..66
+# tests 66
+# suites 0
+# pass 66
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 955.232791

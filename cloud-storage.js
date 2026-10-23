@@ -3,7 +3,7 @@
 'use strict';
 const URL='https://zdjuksmhtvhetzblczqq.supabase.co', KEY='sb_publishable_Hlk_1ZOd_WF_Ijn6VM258w_3w8HFYN4';
 
-const sessionKey='gunsan_bike:cloud-session-v1';let session=null,revision=0,loaded=false,refreshing=null;
+const sessionKey='gunsan_bike:cloud-session-v1';let session=null,revision=0,loaded=false,refreshing=null,loading=null,saving=false,snapshot=null;
 const listeners=new Set();
 try{session=JSON.parse(localStorage.getItem(sessionKey)||'null');}catch(e){}
 function notify(){listeners.forEach(fn=>fn());}
@@ -24,14 +24,42 @@ function normalizeWidths(data){
  if(!data||!Array.isArray(data.features))return data;
  return {...data,features:data.features.map(f=>{const p={...f.properties};p['도로폭원']=p['도로폭원']??p['도로폭']??'';p['보도폭원']=p['보도폭원']??'';p['유효폭원']=p['유효폭원']??'';delete p['도로폭'];delete p['차선'];delete p['차선현황'];return {...f,properties:p};})};
 }
+// Cache is disposable and schema-scoped; drafts and sessions use separate keys.
+const cacheKey='gunsan_bike:dataset-cache-v1';
+const clone=data=>JSON.parse(JSON.stringify(data));
+const validData=data=>data?.type==='FeatureCollection'&&Array.isArray(data.features);
+const validRevision=value=>(typeof value==='number'||(typeof value==='string'&&/^\d+$/.test(value)))&&Number.isSafeInteger(Number(value))&&Number(value)>=0;
+function readCache(){try{const c=JSON.parse(localStorage.getItem(cacheKey));return c?.schema===1&&validRevision(c.revision)&&validData(c.data)?c:null;}catch(e){return null;}}
+function writeCache(row){try{localStorage.setItem(cacheKey,JSON.stringify({schema:1,revision:Number(row.revision),data:row.data}));}catch(e){/* Quota/private mode must not prevent loading. */}}
+async function loadSnapshot(){
+ // Always validate the small revision response against the server before using cache.
+ const meta=await request('/rest/v1/gunsan_bike_datasets?id=eq.gunsan_bike&select=revision,updated_at');
+ if(!meta?.[0]||!validRevision(meta[0].revision))throw Error('공용 노선 버전을 확인하지 못했습니다. 저장을 중지합니다.');
+ const cached=readCache();let row;
+ if(cached&&Number(cached.revision)===Number(meta[0].revision))row=cached;
+ else {
+  const rows=await request('/rest/v1/gunsan_bike_datasets?id=eq.gunsan_bike&select=data,revision,updated_at');row=rows?.[0];
+  if(!row||!validRevision(row.revision)||!validData(row.data)||Number(row.revision)<Number(meta[0].revision))throw Error('공용 노선 형식 또는 버전이 올바르지 않습니다.');
+  // Use the revision accompanying data, never the earlier metadata (race-safe).
+  writeCache(row);
+ }
+ snapshot=normalizeWidths(clone(row.data));revision=Number(row.revision);loaded=true;notify();return clone(snapshot);
+}
 const cloud=window.GunsanCloud={
  normalizeData:normalizeWidths,
  get revision(){return revision;},get loggedIn(){return !!session;},get email(){return session?.user?.email||'';},
  subscribe(fn){listeners.add(fn);},
- async load(){const rows=await request('/rest/v1/gunsan_bike_datasets?id=eq.gunsan_bike&select=data,revision,updated_at');const row=rows[0];revision=row?Number(row.revision):0;loaded=true;notify();return normalizeWidths(row?.data||null);},
- async save(data){if(!loaded)throw Error('공용 노선을 확인하지 못했습니다. 작업을 내보낸 뒤 새로고침하세요.');const access=await token();
- const rows=await request('/rest/v1/rpc/save_gunsan_bike',{method:'POST',token:access,body:{p_data:normalizeWidths(data),p_revision:revision}});
- if(!rows?.[0])throw Error('공용저장소의 저장 확인을 받지 못했습니다.');revision=Number(rows[0].revision);notify();return rows[0];
+ // Initialization is single-flight. Never advance an active editor's baseline by reloading.
+ async load(){if(loaded)return clone(snapshot);if(!loading)loading=loadSnapshot().finally(()=>loading=null);return clone(await loading);},
+ async save(data){if(!loaded)throw Error('공용 노선을 확인하지 못했습니다. 작업을 내보낸 뒤 새로고침하세요.');
+ if(saving)throw Error('저장이 진행 중입니다. 잠시 기다리세요.');
+ saving=true;try{const access=await token(),expected=revision;
+ const rows=await request('/rest/v1/rpc/save_gunsan_bike',{method:'POST',token:access,body:{p_data:normalizeWidths(data),p_revision:expected}});
+ if(!rows?.[0]||!validRevision(rows[0].revision)||Number(rows[0].revision)<=expected)throw Error('공용저장소의 저장 확인을 받지 못했습니다. 작업을 내보낸 뒤 새로고침하세요.');
+ revision=Number(rows[0].revision);snapshot=normalizeWidths(clone(data));
+ // Read the authoritative server data on the next visit, including server transformations.
+ try{localStorage.removeItem(cacheKey);}catch(e){}notify();return rows[0];
+ }finally{saving=false;}
  },
  async login(email,password){const next=await request('/auth/v1/token?grant_type=password',{method:'POST',body:{email,password}});remember(next);},
  async logout(){const current=session;remember(null);if(current)try{await request('/auth/v1/logout',{method:'POST',token:current.access_token});}catch(e){}},

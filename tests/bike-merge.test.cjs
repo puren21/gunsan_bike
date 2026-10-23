@@ -3,7 +3,7 @@ const source=fs.readFileSync(path.join(__dirname,'../bike-tools.js'),'utf8');
 function load(name,context){const start=source.indexOf('  function '+name+'(');assert(start>=0);const end=source.indexOf('\n  }',start)+4;vm.runInNewContext(source.slice(start,end)+'\nthis.subject='+name,context);return context.subject;}
 test('merge tool opens with no selection; confirmation requires two lines',()=>{
  const nodes=new Map(),element=id=>{if(!nodes.has(id))nodes.set(id,{setAttribute(k,v){this[k]=v}});return nodes.get(id)};
- const ctx={$:element,panel:element('panel'),selected:new Set(),active:()=>null,mode:'merge',activeId:null,busy:false,undoStack:[],redoStack:[],attrDirty:false,dataset:{features:[]},esc:String};
+ const ctx={ready:true,tableEditing:false,updateTableEditingUI(){},tablePanel:{hidden:true,querySelectorAll:()=>[]},dirty:false,stagedImport:null,capture:[],optionWindows:null,idOf:f=>f.properties.__bike_id,$:element,panel:element('panel'),selected:new Set(),active:()=>null,mode:'merge',activeId:null,busy:false,undoStack:[],redoStack:[],attrDirty:false,dataset:{features:[]},esc:String};
  const update=load('updateUI',ctx);update();assert.equal(element('bikeTool-merge').disabled,false);assert.equal(element('bikeTool-merge')['aria-pressed'],'true');assert.equal(element('bikeMergeFinishBtn').disabled,true);assert.equal(element('bikeToolActions').hidden,false);assert.equal(element('bikeMergeFinishBtn').hidden,false);
  ctx.selected=new Set(['a','b']);update();assert.equal(element('bikeMergeFinishBtn').disabled,false);assert.equal(element('bikeMergeFinishBtn').textContent,'선택한 2개 라인 병합');
  ctx.busy=true;update();assert.equal(element('bikeMergeFinishBtn').disabled,true);assert.equal(element('panel')['aria-busy'],'true');
