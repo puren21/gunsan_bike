@@ -10349,7 +10349,7 @@ const gunsanStorage = {
 
       const BOUNDARY_LAYERS = {
         cityBoundary: {
-          files: ["data/display/city-v1.geojson?v=17edea8ad5df", "City Boundary.geojson"],
+          files: ["data/display/city-v1.geojson?v=22cc418484e2", "City Boundary.geojson"],
           visible: false,
           maxScale: Infinity,
           strokeColor: "#3F4852",
@@ -10360,7 +10360,7 @@ const gunsanStorage = {
           shapes: []
         },
         townshipBoundary: {
-          files: ["data/display/township-v1.geojson?v=88c3634141bc", "Township Boundary.geojson"],
+          files: ["data/display/township-v1.geojson?v=3d6490165828", "Township Boundary.geojson"],
           overviewShapes: [],
           detailLoaded: false,
           detailLoadingPromise: null,
@@ -17172,7 +17172,7 @@ const gunsanStorage = {
         if (layer.detailLoaded) return;
         if (layer.detailLoadingPromise) return layer.detailLoadingPromise;
         layer.detailLoadingPromise = (async function() {
-          const loaded = await fetchFirstAvailableGeoJSON(["data/display/township-v1.geojson?v=88c3634141bc", "Township Boundary.geojson"]);
+          const loaded = await fetchFirstAvailableGeoJSON(["data/display/township-v1.geojson?v=3d6490165828", "Township Boundary.geojson"]);
           const shapes = [];
           loaded.data.features.forEach(function(feature) {
             addTownshipBoundaryLines(feature, shapes);
