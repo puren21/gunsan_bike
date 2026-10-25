@@ -54,7 +54,7 @@ const cloud=window.GunsanCloud={
  async save(data){if(!loaded)throw Error('공용 노선을 확인하지 못했습니다. 작업을 내보낸 뒤 새로고침하세요.');
  if(saving)throw Error('저장이 진행 중입니다. 잠시 기다리세요.');
  saving=true;try{const access=await token(),expected=revision;
- const rows=await request('/rest/v1/rpc/save_gunsan_bike',{method:'POST',token:access,body:{p_data:normalizeWidths(data),p_revision:expected}});
+ const rows=await request('/rest/v1/rpc/save_gunsan_bike?select=revision,updated_at',{method:'POST',token:access,body:{p_data:normalizeWidths(data),p_revision:expected}});
  if(!rows?.[0]||!validRevision(rows[0].revision)||Number(rows[0].revision)<=expected)throw Error('공용저장소의 저장 확인을 받지 못했습니다. 작업을 내보낸 뒤 새로고침하세요.');
  revision=Number(rows[0].revision);snapshot=normalizeWidths(clone(data));
  // Read the authoritative server data on the next visit, including server transformations.

@@ -17403,19 +17403,22 @@ const gunsanStorage = {
         );
       });
 
-      function processRoadFeaturesInChunks(features, layerId) {
-        return new Promise(function(resolve) {
+      function processRoadFeaturesInChunks(features, layerId, options = {}) {
+        return new Promise(function(resolve, reject) {
           let index = 0;
           let skipped = 0;
           const total = features.length;
-          const chunkSize = 18;
+          const chunkSize = options.interactive ? 128 : 18;
 
           function runChunk(deadline) {
+            try {
             let processed = 0;
+            const started = performance.now();
 
             while (
               index < total &&
               processed < chunkSize &&
+              (!options.interactive || processed === 0 || performance.now() - started < 8) &&
               (!deadline || deadline.timeRemaining() > 2 || deadline.didTimeout)
             ) {
               const before = allRoads.length;
@@ -17430,15 +17433,16 @@ const gunsanStorage = {
               return;
             }
 
-            if ("requestIdleCallback" in window) {
+            if (!options.interactive && "requestIdleCallback" in window) {
               window.requestIdleCallback(runChunk, { timeout: 80 });
             } else {
               setTimeout(function() { runChunk(null); }, 0);
             }
+            } catch (error) { reject(error); }
           }
 
           // Edge/Chrome에서 첫 렌더링 직후 작업을 잘게 나눠 메인 스레드 정지를 줄임.
-          if ("requestIdleCallback" in window) {
+          if (!options.interactive && "requestIdleCallback" in window) {
             window.requestIdleCallback(runChunk, { timeout: 80 });
           } else {
             setTimeout(function() { runChunk(null); }, 0);
@@ -17446,14 +17450,24 @@ const gunsanStorage = {
         });
       }
 
+      let sharedRoadsLoaded = false;
       async function loadGeoJSON(layerId) {
-        // 서버(GitHub Pages)에 배포된 파일만 읽음.
-        // 브라우저에 예전에 저장된 대용량 GeoJSON은 사용하지 않음.
+        if (layerId === 'rural' && window.GunsanCloud) {
+          let shared;
+          try { shared = await window.GunsanCloud.load(); }
+          catch (error) { console.warn('공용 노선 연결 실패 · 정적 기본 자료로 표시합니다.', error); }
+          if (shared) {
+            await processRoadFeaturesInChunks(shared.features, layerId);
+            sharedRoadsLoaded = true;
+            return;
+          }
+        }
+        // 정적 기본 레이어는 ETag로 재검증하여 최신 파일과 HTTP 캐시를 함께 사용.
         const response =
           await fetch(
-            LAYERS[layerId].file + "?v=" + Date.now(),
+            LAYERS[layerId].file,
             {
-              cache: "no-store",
+              cache: "no-cache",
               credentials: "same-origin"
             }
           );
@@ -17994,7 +18008,7 @@ const gunsanStorage = {
         }
       }
 
-      async function replaceChangedRoadDatasetNow(data) {
+      async function replaceChangedRoadDatasetNow(data, options = {}) {
         if (
           !data ||
           data.type !== "FeatureCollection" ||
@@ -18041,7 +18055,7 @@ const gunsanStorage = {
 
         ruralTotalLengths.clear();
 
-        await processRoadFeaturesInChunks(data.features, "rural");
+        await processRoadFeaturesInChunks(data.features, "rural", options);
 
         groups.forEach(function(group) {
           if (group && group.layerId === "rural") {
@@ -25795,6 +25809,7 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
         map, ready: Promise.all([roadsReadyPromise, townshipBoundaryReadyPromise]),
         categories: BIKE_CATEGORIES, normalizeCategory: normalizeBikeCategory,
         read: buildCurrentChangedRoadGeoJSON, replace: replaceChangedRoadDatasetNow,
+        get sharedRoadsLoaded() { return sharedRoadsLoaded; },
         showAllRoutes: function() {
           changedRoadDatasetVisible = true; LAYERS.rural.visible = true;
           gunsanStorage.setItem("gyeongjuChangedRoadVisible", "1");
