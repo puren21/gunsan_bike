@@ -254,6 +254,9 @@ window.installBikeTools = function(api) {
     $('bikeTool-vertex').disabled=!activeId;$('bikeTool-split').disabled=!selected.size;$('bikeTool-merge').disabled=busy;$('bikeTool-connect').disabled=busy;$('bikeTool-delete').disabled=!selected.size;
     $('bikeTool-undo').disabled=!undoStack.length&&!attrDirty;$('bikeTool-redo').disabled=!redoStack.length;
     for(const id of ['bikeSaveBtn','bikeStopBtn','bikeEditorClose','bikeEditorBtn'])$(id).disabled=busy;
+    $('bikeAttributes').disabled=busy||!activeId;$('bikeRouteName').disabled=busy||!activeId;$('bikePanelImport').disabled=busy;
+    for(const tool of ['select','draw','multi'])$('bikeTool-'+tool).disabled=busy;
+    for(const tool of ['vertex','split','delete','undo','redo'])if(busy)$('bikeTool-'+tool).disabled=true;
     panel.setAttribute('aria-busy',String(busy));
     const text={connect:'연결할 라인을 두 개 이상 클릭하세요. 가까운 끝점끼리 차례로 연결하며 주황 점선으로 새 구간을 표시합니다. 연결 실행 후 저장하면 하나의 연속 라인으로 반영됩니다. 속성은 첫 선택 라인을 사용합니다.',merge:'지도에서 합칠 라인을 차례로 클릭하세요. 다시 클릭하면 선택이 해제됩니다. 2개 이상 선택한 뒤 파란 병합 버튼을 누르세요. 속성은 처음 선택한 라인을 사용합니다.',select:'라인을 클릭해 선택하세요. 마우스 드래그는 지도 화면 이동입니다. Shift+클릭: 추가 선택',multi:'라인을 차례로 클릭해 선택을 추가합니다. 다시 클릭하면 선택 해제됩니다. 드래그는 지도 화면 이동입니다.',draw:'시작점부터 모든 입력점이 기존 라인의 끝점·꼭지점·선분에 스냅됩니다 (20px). 초록 표식: 연결 위치 · 클릭: 점 고정 · 우클릭/완료: 라인 생성 · Esc: 취소',vertex:'꼭지점을 끌어 기존 라인 가까이 옮기세요. 초록 표식과 연결 안내가 보이면 놓으세요. 점선은 이동 후 라인 모양입니다. 선 위 클릭: 점 추가 · 꼭지점 우클릭: 삭제',split:'선택한 라인을 가로지르는 절단선을 클릭해 그린 뒤 우클릭 또는 자르기 실행을 누르세요.'};
     $('bikeGeometryHelp').hidden=false;$('bikeGeometryHelp').textContent=text[mode]||text.select;$('bikeToolActions').hidden=!['draw','split','vertex','merge','connect'].includes(mode);$('bikeFinishBtn').hidden=!['draw','split'].includes(mode);$('bikeCancelToolBtn').hidden=!['draw','split','vertex','merge','connect'].includes(mode);$('bikeFinishBtn').textContent=mode==='split'?'자르기 실행':'그리기 완료';$('bikeCancelToolBtn').textContent=mode==='connect'?'× 닫기':'도구 취소';
@@ -436,24 +439,36 @@ window.installBikeTools = function(api) {
       f.properties['연장']=String(Math.round(km*1000)/1000);
     });return next;
   }
+  function finishEditing() {
+    editing=false;snapIndicator.setMap(null);panel.hidden=true;api.setEditing(false);removeOverlays();map.setCursor('');
+    $('bikeEditorBtn').setAttribute('aria-pressed','false');$('bikeEditorBtn').setAttribute('aria-label','편집 모드 켜기');$('bikeEditorBtn').title='편집 모드 켜기';
+  }
   async function save(stop=false) {
     if(busy||!ready)return false;
     if(stagedImport){const pending=stagedImport;stagedImport=null;const ok=await importData(pending);if(ok){$('bikePanelImport').value='';$('bikePanelImportStatus').textContent=pending.features.length+'개 구간 저장 완료 · 공용저장소와 현재 지도에 표시했습니다.';api.showAllRoutes();}else stagedImport=pending;return ok;}
     if(['draw','split'].includes(mode)&&capture.length&&!finishCapture())return false;
     if(!commitAttributes())return false;
-    busy=true;updateUI();
+    if(!dirty){if(stop)finishEditing();msg('변경 사항이 없습니다. 추가 저장 없이 편집을 계속할 수 있습니다.');return true;}
+    busy=true;updateUI();msg('브라우저 백업을 준비하는 중…');
+    let remoteSaved=false;
     try {
+      // Let the saving state paint before validation/serialization and backup work.
+      await new Promise(resolve=>setTimeout(resolve,0));
       const next=prepareData();
       // Durable write first. A quota failure leaves edit mode and input intact.
       storage.setItem('bike-draft-v3',JSON.stringify({base:baseline,dataset:next,updated:new Date().toISOString()}));
-      await window.GunsanCloud.save(copy(next));
-      serverDataset=copy(next);baseline=fingerprint(serverDataset);storage.removeItem('bike-draft-v3');storage.removeItem('bike-draft-v2');
-      await api.replace(copy(next));dataset=next;savedDataset=copy(next);dirty=attrDirty=false;undoStack=[];redoStack=[];
+      msg('공용저장소에 저장 중… 창을 닫지 마세요.');
+      await window.GunsanCloud.save(copy(next));remoteSaved=true;
+      msg('서버 저장 완료 · 지도에 반영 중…');
+      await api.replace(copy(next),{interactive:true});
+      serverDataset=copy(next);baseline=fingerprint(serverDataset);dataset=next;savedDataset=copy(next);dirty=attrDirty=false;undoStack=[];redoStack=[];
+      // Keep the durable backup until both acknowledgement and map refresh succeed.
+      try{storage.removeItem('bike-draft-v3');storage.removeItem('bike-draft-v2');}catch(e){}
       lastSaved=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});fillRoutes();loadAttributes();
-      if(stop){editing=false;snapIndicator.setMap(null);panel.hidden=true;api.setEditing(false);removeOverlays();map.setCursor('');$('bikeEditorBtn').setAttribute('aria-pressed','false');$('bikeEditorBtn').setAttribute('aria-label','편집 모드 켜기');$('bikeEditorBtn').title='편집 모드 켜기';}
+      if(stop){finishEditing();}
       else {setMode(mode==='connect'?'connect':'select');paint();}
       msg('도형과 속성을 공용저장소에 저장했습니다. 다른 컴퓨터에서 새로고침하면 같은 노선이 표시됩니다.');return true;
-    }catch(e){msg('저장하지 못했습니다: '+e.message,true);return false;}
+    }catch(e){msg((remoteSaved?'서버에는 저장했지만 지도 반영에 실패했습니다. 브라우저 백업과 현재 편집을 유지합니다. 최신 자료를 다시 불러오기 전에 내보내세요: ':'저장하지 못했습니다: ')+e.message,true);return false;}
     finally{busy=false;updateUI();}
   }
   function start(preserveView=false) {
@@ -534,7 +549,7 @@ window.installBikeTools = function(api) {
   $('bikeLayerBtn').onclick=()=>{layerEnabled=!layerEnabled;$('bikeLayerBtn').setAttribute('aria-pressed',String(layerEnabled));syncOverlay();};kakao.maps.event.addListener(map,'maptypeid_changed',()=>{syncOverlay();if(editing||selected.size)paint();});
   api.ready.then(async()=>{
     let shared=null;try{shared=await window.GunsanCloud.load();}catch(e){msg('공용저장소 연결 실패: '+e.message+' 게시된 기본 노선을 표시합니다.',true);}
-    if(shared)await api.replace(copy(shared));
+    if(shared&&!api.sharedRoadsLoaded)await api.replace(copy(shared));
     const raw=shared||api.read(),oldFingerprint=fingerprint(raw);serverDataset=normalize(raw);baseline=fingerprint(serverDataset);dataset=copy(serverDataset);let olderDraft=null;
     const text=storage.getItem('bike-draft-v3')||storage.getItem('bike-draft-v2');
     if(text){const draft=JSON.parse(text);if(draft.base===baseline||draft.base===oldFingerprint){dataset=normalize(draft.dataset);dirty=true;await api.replace(copy(dataset));}else {olderDraft=normalize(draft.dataset);msg('게시 데이터가 변경되어 이전 편집본을 자동 복원하지 않았습니다. 이전 브라우저 편집본 내보내기로 백업할 수 있습니다.',true);}}
