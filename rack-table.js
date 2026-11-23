@@ -7,7 +7,7 @@ window.installRackAttributeTable=function(api){
  document.body.append(panel);const $=selector=>panel.querySelector(selector),fields=api.fields;
  let popup=null,tableEditing=false,sortKey='#',sortDirection=1,signature='',widths={};try{widths=JSON.parse(api.storage.getItem('rack-table-column-widths')||'{}')||{};}catch(e){}
  const collator=new Intl.Collator('ko',{numeric:true,sensitivity:'base'}),columns=['#',...fields];
- const defaultWidth=key=>key==='#'?48:key==='명칭'?200:key==='위치'?280:key==='형식'?180:120;
+ const defaultWidth=key=>key==='#'?48:key==='명칭'||key==='주용도'?200:key==='위치'?280:key==='형식'?180:120;
  const width=key=>Number.isFinite(Number(widths[key]))?Math.max(50,Math.min(1200,Number(widths[key]))):defaultWidth(key);
  function applyWidths(){let total=0;$('colgroup').querySelectorAll('col').forEach(col=>{const value=width(col.dataset.column);col.style.width=value+'px';total+=value;});$('table').style.width=total+'px';}
  function render(){
