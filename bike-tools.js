@@ -52,7 +52,7 @@ window.installBikeTools = function(api) {
   window.addBikeMenuHelp(tablePanel,[tablePanel.querySelector(':scope > p')]);
   tablePanel.querySelector('header').prepend(tablePanel.querySelector('.bike-table-actions'));
   document.body.append(tablePanel);
-  function focusWindow(target){document.querySelectorAll('#bikeEditorPanel,#bikeTablePanel,.bike-tool-options').forEach(el=>el.classList.toggle('bike-active-window',el===target));}
+  function focusWindow(target){document.querySelectorAll('#bikeEditorPanel,#rackEditorPanel,#bikeTablePanel,.bike-tool-options').forEach(el=>el.classList.toggle('bike-active-window',el===target));}
   [panel,tablePanel].forEach(el=>el.addEventListener('pointerdown',()=>focusWindow(el)));
   const columns=[['노선명','number'],['구분','자전거도로'],['기점','기점'],['종점','종점'],['도로폭원 (m)','도로폭원'],['보도폭원 (m)','보도폭원'],['유효폭원 (m)','유효폭원'],['연장 (km)','연장'],['비고','비고']];
   function cellValue(f,key){const p=f.properties;return key==='number'?nameOf(f):key==='자전거도로'?api.normalizeCategory(p['구분']||p.GUBUN||p[key]):key==='기점'?(p['기점']||p['시점']||''):p[key]??'';}
@@ -501,7 +501,7 @@ window.installBikeTools = function(api) {
     if(await save(wasEditing)){fillRoutes();return true;}
     dataset=previous.dataset;selected=new Set(previous.ids);activeId=previous.activeId;part=previous.part;fillRoutes();loadAttributes();paint();return false;
   }
-  window.bikeEditor={get active(){return editing;},get capturesRightClick(){return editing&&['draw','split'].includes(mode)&&capture.length>0;},start,validateImport,importData,publishData,
+  window.bikeEditor={installPanelUI(element,key){movable(element,element.querySelector('header'),key);edgeResize(element);element.addEventListener('pointerdown',()=>focusWindow(element));},get active(){return editing;},get capturesRightClick(){return editing&&['draw','split'].includes(mode)&&capture.length>0;},start,validateImport,importData,publishData,
     exportData(){if(!ready){msg('지도가 준비된 뒤 다시 시도하세요.',true);return;}$('bikeExportBtn').click();},
     selectFromId(id){if(!editing)start();if(dataset.features.some(f=>idOf(f)===id))selectFeature(id);},
     selectFromRoute(name,index=0){if(!editing)start();const candidates=dataset.features.filter(f=>nameOf(f)===name);if(candidates.length)selectFeature(idOf(candidates[Math.min(index,candidates.length-1)]));}
