@@ -1,0 +1,44 @@
+/* Detached rack attributes table. All edits go through the existing rack session. */
+window.installRackAttributeTable=function(api){
+ 'use strict';
+ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const panel=document.createElement('section');panel.id='rackAttributeTable';panel.className='rack-table-panel';panel.hidden=true;panel.setAttribute('aria-label','자전거보관대 속성테이블');
+ panel.innerHTML='<header class="rack-table-bar"><input type="search" data-search placeholder="명칭·속성 검색" aria-label="보관대 속성 검색"><span data-count></span><div class="rack-table-buttons"><button type="button" data-edit aria-label="보관대 속성 편집 켜기" title="속성 편집 켜기" aria-pressed="false">✎</button><button type="button" data-delete disabled>선택 행 삭제</button><button type="button" data-save class="rack-table-primary">저장</button><button type="button" data-cancel>취소</button><button type="button" data-help aria-label="보관대 속성테이블 도움말" aria-expanded="false">?</button><button type="button" data-close aria-label="보관대 속성테이블 닫기">×</button></div></header><p class="rack-table-help" hidden>행 선택: 해당 포인트로 이동 · 연필: 속성 편집 켜기·끄기 · 열 제목: 정렬 · 열 경계: 너비 조절. 변경 후 저장을 누르면 공용저장소에 반영됩니다.</p><div class="rack-table-scroll"><table><colgroup></colgroup><thead></thead><tbody></tbody></table></div><p class="rack-table-status" role="status" aria-live="polite"></p><datalist id="rackTableTypes"><option value="거치식"><option value="차영식"><option value="박스식"><option value="기타"></datalist>';
+ document.body.append(panel);const $=selector=>panel.querySelector(selector),fields=api.fields;
+ let popup=null,tableEditing=false,sortKey='#',sortDirection=1,signature='',widths={};try{widths=JSON.parse(api.storage.getItem('rack-table-column-widths')||'{}')||{};}catch(e){}
+ const collator=new Intl.Collator('ko',{numeric:true,sensitivity:'base'}),columns=['#',...fields];
+ const defaultWidth=key=>key==='#'?48:key==='명칭'?200:key==='위치'?280:key==='형식'?180:120;
+ const width=key=>Number.isFinite(Number(widths[key]))?Math.max(50,Math.min(1200,Number(widths[key]))):defaultWidth(key);
+ function applyWidths(){let total=0;$('colgroup').querySelectorAll('col').forEach(col=>{const value=width(col.dataset.column);col.style.width=value+'px';total+=value;});$('table').style.width=total+'px';}
+ function render(){
+  const state=api.state(),records=api.read(),query=$('[data-search]').value.trim().toLocaleLowerCase();
+  const indexed=records.map((f,i)=>({f,i})).filter(({f})=>fields.some(k=>String(f.properties[k]??'').toLocaleLowerCase().includes(query)));
+  indexed.sort((a,b)=>{if(sortKey==='#')return sortDirection*(a.i-b.i);const av=a.f.properties[sortKey]??'',bv=b.f.properties[sortKey]??'',blankA=String(av).trim()==='',blankB=String(bv).trim()==='';if(blankA!==blankB)return blankA?1:-1;const numeric=['보관대수','주차대수'].includes(sortKey)&&!blankA;return sortDirection*(numeric?Number(av)-Number(bv):collator.compare(String(av),String(bv)))||a.i-b.i;});
+  $('colgroup').innerHTML=columns.map(k=>'<col data-column="'+esc(k)+'">').join('');
+  $('thead').innerHTML='<tr>'+columns.map(k=>'<th aria-sort="'+(sortKey===k?(sortDirection===1?'ascending':'descending'):'none')+'"><button type="button" data-sort="'+esc(k)+'">'+esc(k)+(sortKey===k?(sortDirection===1?' ▲':' ▼'):' ↕')+'</button><span class="rack-table-col-resize" data-column="'+esc(k)+'" title="드래그하여 열 너비 조절"></span></th>').join('')+'</tr>';
+  $('tbody').innerHTML=indexed.map(({f,i})=>'<tr data-rack-id="'+esc(f.properties.__rack_id)+'" aria-selected="'+String(state.selected===f.properties.__rack_id)+'"><td>'+(i+1)+'</td>'+fields.map(k=>'<td><input data-key="'+esc(k)+'" aria-label="'+esc(k)+'" value="'+esc(f.properties[k]??'')+'" '+(['보관대수','주차대수'].includes(k)?'type="number" min="0" step="1"':k==='형식'?'list="rackTableTypes" maxlength="100"':k==='명칭'?'maxlength="120"':'maxlength="500"')+'></td>').join('')+'</tr>').join('');
+  $('[data-count]').textContent=indexed.length+' / '+records.length+'개';applyWidths();
+ }
+ function refresh(force=false){if(panel.hidden)return;const state=api.state(),next=JSON.stringify(api.read());if(force||next!==signature){signature=next;render();}
+  if(!state.editing)tableEditing=false;const editable=tableEditing&&state.editing&&!state.busy;
+  $('[data-edit]').disabled=state.busy||!state.loaded;$('[data-edit]').setAttribute('aria-pressed',String(tableEditing));$('[data-edit]').setAttribute('aria-label',tableEditing?'보관대 속성 편집 끄기':'보관대 속성 편집 켜기');$('[data-edit]').title=tableEditing?'속성 편집 끄기':'속성 편집 켜기';
+  $('[data-delete]').disabled=!editable||!state.selected;$('[data-save]').disabled=!state.editing||state.busy||!state.loaded;$('[data-cancel]').disabled=state.busy||!state.dirty;
+  $('tbody').querySelectorAll('input').forEach(input=>input.readOnly=!editable);$('tbody').querySelectorAll('tr').forEach(row=>row.setAttribute('aria-selected',String(row.dataset.rackId===state.selected)));
+ }
+ function restore(){if(panel.ownerDocument!==document)document.body.append(panel);panel.hidden=true;popup=null;}
+ function open(){if(!api.state().loaded||!api.commit())return;if(popup&&!popup.closed){popup.focus();return;}popup=window.open('','gunsanRackAttributes','popup=yes,width=1080,height=570,resizable=yes,scrollbars=yes');panel.hidden=false;
+  if(popup){const doc=popup.document;doc.head.replaceChildren();doc.title='자전거보관대 속성테이블';doc.documentElement.lang='ko';const link=doc.createElement('link');link.rel='stylesheet';link.href=document.querySelector('link[href*="bike-racks.css"]').href;doc.head.append(link);doc.body.className='rack-table-detached';doc.body.replaceChildren(panel);popup.addEventListener('beforeunload',restore,{once:true});popup.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();doc.activeElement?.blur();api.save();}});popup.focus();}
+  else status('팝업이 차단되어 지도 안에 열었습니다. 팝업 허용 시 별도 창으로 이동할 수 있습니다.');refresh(true);
+ }
+ function status(text,error=false){$('.rack-table-status').textContent=text;$('.rack-table-status').classList.toggle('error',error);}
+ $('[data-edit]').onclick=()=>{const next=!tableEditing;if(api.setEditing(next)){tableEditing=next;refresh();}};
+ $('[data-delete]').onclick=()=>{if(tableEditing&&api.state().editing)api.remove();};$('[data-save]').onclick=()=>api.save();$('[data-cancel]').onclick=()=>api.cancel();$('[data-close]').onclick=()=>{if(popup&&!popup.closed)popup.close();else panel.hidden=true;};
+ $('[data-help]').onclick=()=>{const help=$('.rack-table-help');help.hidden=!help.hidden;$('[data-help]').setAttribute('aria-expanded',String(!help.hidden));};$('[data-search]').oninput=()=>refresh(true);
+ $('thead').onclick=event=>{const button=event.target.closest('[data-sort]');if(!button)return;const key=button.dataset.sort;sortDirection=sortKey===key?-sortDirection:1;sortKey=key;refresh(true);};
+ $('tbody').onclick=event=>{const row=event.target.closest('tr[data-rack-id]');if(!row||api.state().busy)return;if(api.state().selected!==row.dataset.rackId)api.select(row.dataset.rackId);};
+ $('tbody').onchange=event=>{const input=event.target.closest('input[data-key]'),row=input?.closest('tr[data-rack-id]');if(!input||!row||!tableEditing||!api.state().editing||api.state().busy)return;api.change(row.dataset.rackId,input.dataset.key,input.value);refresh(true);};
+ $('thead').addEventListener('pointerdown',event=>{const handle=event.target.closest('.rack-table-col-resize');if(!handle||event.button!==0)return;event.preventDefault();event.stopPropagation();const key=handle.dataset.column,start=event.clientX,initial=width(key);handle.setPointerCapture(event.pointerId);const move=e=>{widths[key]=Math.max(50,Math.min(1200,initial+e.clientX-start));applyWidths();};const end=()=>{handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',end);handle.removeEventListener('pointercancel',end);api.storage.setItem('rack-table-column-widths',JSON.stringify(widths));};handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',end);handle.addEventListener('pointercancel',end);});
+ $('.rack-table-bar').addEventListener('pointerdown',event=>{if(panel.ownerDocument!==document||event.button!==0||event.target.closest('button,input'))return;event.preventDefault();const r=panel.getBoundingClientRect(),x=event.clientX,y=event.clientY,bar=event.currentTarget;bar.setPointerCapture(event.pointerId);const move=e=>{panel.style.left=Math.max(0,Math.min(innerWidth-100,r.left+e.clientX-x))+'px';panel.style.top=Math.max(0,Math.min(innerHeight-50,r.top+e.clientY-y))+'px';panel.style.bottom='auto';};const end=()=>{bar.removeEventListener('pointermove',move);bar.removeEventListener('pointerup',end);};bar.addEventListener('pointermove',move);bar.addEventListener('pointerup',end);});
+ window.addEventListener('pagehide',()=>{if(popup&&!popup.closed)popup.close();});
+ return {open,refresh,status};
+};
