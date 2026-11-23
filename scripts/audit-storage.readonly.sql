@@ -1,0 +1,13 @@
+-- Read-only catalog audit. No route rows are returned or changed.
+select jsonb_build_object(
+ 'server_version',current_setting('server_version'),
+ 'auth_uid_definition',pg_get_functiondef('auth.uid()'::regprocedure),
+ 'history_privileges',(select jsonb_agg(jsonb_build_object('role',r,'select',has_table_privilege(r,'public.gunsan_bike_history','SELECT'),'insert',has_table_privilege(r,'public.gunsan_bike_history','INSERT'),'update',has_table_privilege(r,'public.gunsan_bike_history','UPDATE'),'delete',has_table_privilege(r,'public.gunsan_bike_history','DELETE'))) from unnest(array['anon','authenticated']) r),
+ 'function',(select jsonb_build_object('definition',pg_get_functiondef(p.oid),'security_definer',p.prosecdef,'settings',p.proconfig,'acl',p.proacl::text) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='save_gunsan_bike'),
+ 'columns',(select jsonb_agg(jsonb_build_object('table',table_name,'name',column_name,'type',udt_name,'nullable',is_nullable,'default',column_default) order by table_name,ordinal_position) from information_schema.columns where table_schema='public' and table_name in ('gunsan_bike_datasets','gunsan_bike_history')),
+ 'tables',(select jsonb_agg(jsonb_build_object('name',c.relname,'rls',c.relrowsecurity,'force_rls',c.relforcerowsecurity)) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname in ('gunsan_bike_datasets','gunsan_bike_history')),
+ 'privileges',(select jsonb_agg(jsonb_build_object('role',r,'select',has_table_privilege(r,'public.gunsan_bike_datasets','SELECT'),'insert',has_table_privilege(r,'public.gunsan_bike_datasets','INSERT'),'update',has_table_privilege(r,'public.gunsan_bike_datasets','UPDATE'),'delete',has_table_privilege(r,'public.gunsan_bike_datasets','DELETE'),'execute',has_function_privilege(r,'public.save_gunsan_bike(jsonb,bigint)','EXECUTE'))) from unnest(array['anon','authenticated']) r),
+ 'policies',(select coalesce(jsonb_agg(to_jsonb(p)),'[]'::jsonb) from pg_policies p where schemaname='public' and tablename in ('gunsan_bike_datasets','gunsan_bike_history')),
+ 'constraints',(select jsonb_agg(jsonb_build_object('table',c.conrelid::regclass::text,'definition',pg_get_constraintdef(c.oid))) from pg_constraint c where c.conrelid in ('public.gunsan_bike_datasets'::regclass,'public.gunsan_bike_history'::regclass)),
+ 'triggers',(select coalesce(jsonb_agg(pg_get_triggerdef(t.oid)),'[]'::jsonb) from pg_trigger t where t.tgrelid in ('public.gunsan_bike_datasets'::regclass,'public.gunsan_bike_history'::regclass) and not t.tgisinternal)
+) as storage_audit;

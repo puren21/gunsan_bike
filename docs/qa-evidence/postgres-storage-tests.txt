@@ -1,0 +1,56 @@
+TAP version 13
+# Subtest: audited Supabase SQL on isolated PostgreSQL 17.6
+    # Subtest: same PostgreSQL version, exact audited save/auth definitions and search_path
+    ok 1 - same PostgreSQL version, exact audited save/auth definitions and search_path
+      ---
+      duration_ms: 7.841625
+      ...
+    # Subtest: anonymous and authenticated roles cannot directly insert/update/delete the original table
+    ok 2 - anonymous and authenticated roles cannot directly insert/update/delete the original table
+      ---
+      duration_ms: 4.254542
+      ...
+    # Subtest: authorized save retains all geometry/properties and creates the previous revision history
+    ok 3 - authorized save retains all geometry/properties and creates the previous revision history
+      ---
+      duration_ms: 2.889459
+      ...
+    # Subtest: stale revision and malformed GeoJSON reject without changing data/history
+    ok 4 - stale revision and malformed GeoJSON reject without changing data/history
+      ---
+      duration_ms: 1.730042
+      ...
+    # Subtest: two truly concurrent PostgreSQL transactions: exactly one save, one SQLSTATE 40001
+    ok 5 - two truly concurrent PostgreSQL transactions: exactly one save, one SQLSTATE 40001
+      ---
+      duration_ms: 56.702709
+      ...
+    # Subtest: concurrent creation of an empty dataset cannot overwrite the first initializer
+    ok 6 - concurrent creation of an empty dataset cannot overwrite the first initializer
+      ---
+      duration_ms: 54.343542
+      ...
+    # Subtest: history insert failure aborts the complete save transaction
+    ok 7 - history insert failure aborts the complete save transaction
+      ---
+      duration_ms: 3.081458
+      ...
+    # Subtest: old/new browser storage clients use audited PostgreSQL SQL over real local HTTP
+    ok 8 - old/new browser storage clients use audited PostgreSQL SQL over real local HTTP
+      ---
+      duration_ms: 176.96375
+      ...
+    1..8
+ok 1 - audited Supabase SQL on isolated PostgreSQL 17.6
+  ---
+  duration_ms: 1472.550709
+  ...
+1..1
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1543.667333
