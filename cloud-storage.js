@@ -5,6 +5,7 @@ const URL='https://zdjuksmhtvhetzblczqq.supabase.co', KEY='sb_publishable_Hlk_1Z
 
 const sessionKey='gunsan_bike:cloud-session-v1';let session=null,revision=0,loaded=false,refreshing=null,loading=null,saving=false,snapshot=null;
 let rackRevision=0,racksLoaded=false,rackSaving=false,rackLoading=null,rackSnapshot=null;
+let crossingRevision=0,crossingsLoaded=false,crossingSaving=false,crossingLoading=null,crossingSnapshot=null;
 const listeners=new Set();
 try{session=JSON.parse(localStorage.getItem(sessionKey)||'null');}catch(e){}
 function notify(){listeners.forEach(fn=>fn());}
@@ -73,6 +74,18 @@ const cloud=window.GunsanCloud={
   rackSaving=true;try{const access=await token(),expected=rackRevision;const rows=await request('/rest/v1/rpc/save_gunsan_bike_racks?select=revision,updated_at',{method:'POST',token:access,body:{p_data:data,p_revision:expected}});
    if(!rows?.[0]||!validRevision(rows[0].revision)||Number(rows[0].revision)<=expected)throw Error('보관대 저장 확인을 받지 못했습니다. 새로고침 전에 내보내기로 백업하세요.');rackRevision=Number(rows[0].revision);rackSnapshot=clone(data);return rows[0];
   }finally{rackSaving=false;}
+ },
+ get crossingRevision(){return crossingRevision;},
+ async loadCrossings(){
+  if(crossingsLoaded)return clone(crossingSnapshot);
+  if(!crossingLoading)crossingLoading=request('/rest/v1/gunsan_bike_crossing_datasets?id=eq.gunsan_bike_crossings&select=data,revision').then(rows=>{const row=rows?.[0];if(!row||!validRevision(row.revision)||!validData(row.data))throw Error('횡단도로 저장소를 확인하지 못했습니다.');crossingRevision=Number(row.revision);crossingSnapshot=clone(row.data);crossingsLoaded=true;return crossingSnapshot;}).finally(()=>crossingLoading=null);
+  return clone(await crossingLoading);
+ },
+ async saveCrossings(data){
+  if(!crossingsLoaded)throw Error('횡단도로 저장소를 먼저 불러오세요.');if(crossingSaving)throw Error('횡단도로를 저장 중입니다.');
+  crossingSaving=true;try{const access=await token(),expected=crossingRevision;const rows=await request('/rest/v1/rpc/save_gunsan_bike_crossings?select=revision,updated_at',{method:'POST',token:access,body:{p_data:data,p_revision:expected}});
+   if(!rows?.[0]||!validRevision(rows[0].revision)||Number(rows[0].revision)<=expected)throw Error('횡단도로 저장 확인을 받지 못했습니다. 새로고침 전에 내보내기로 백업하세요.');crossingRevision=Number(rows[0].revision);crossingSnapshot=clone(data);return rows[0];
+  }finally{crossingSaving=false;}
  },
  async login(email,password){const next=await request('/auth/v1/token?grant_type=password',{method:'POST',body:{email,password}});remember(next);},
  async logout(){const current=session;remember(null);if(current)try{await request('/auth/v1/logout',{method:'POST',token:current.access_token});}catch(e){}},

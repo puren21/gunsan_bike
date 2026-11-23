@@ -52,7 +52,7 @@ window.installBikeTools = function(api) {
   window.addBikeMenuHelp(tablePanel,[tablePanel.querySelector(':scope > p')]);
   tablePanel.querySelector('header').prepend(tablePanel.querySelector('.bike-table-actions'));
   document.body.append(tablePanel);
-  function focusWindow(target){document.querySelectorAll('#bikeEditorPanel,#rackEditorPanel,#bikeTablePanel,.bike-tool-options').forEach(el=>el.classList.toggle('bike-active-window',el===target));}
+  function focusWindow(target){document.querySelectorAll('#bikeEditorPanel,#rackEditorPanel,#crossingEditorPanel,#bikeTablePanel,.bike-tool-options').forEach(el=>el.classList.toggle('bike-active-window',el===target));}
   [panel,tablePanel].forEach(el=>el.addEventListener('pointerdown',()=>focusWindow(el)));
   const columns=[['노선명','number'],['구분','자전거도로'],['기점','기점'],['종점','종점'],['도로폭원 (m)','도로폭원'],['보도폭원 (m)','보도폭원'],['유효폭원 (m)','유효폭원'],['연장 (km)','연장'],['비고','비고']];
   function cellValue(f,key){const p=f.properties;return key==='number'?nameOf(f):key==='자전거도로'?api.normalizeCategory(p['구분']||p.GUBUN||p[key]):key==='기점'?(p['기점']||p['시점']||''):p[key]??'';}
@@ -367,7 +367,7 @@ window.installBikeTools = function(api) {
     activeId=selected.has(id)?id:[...selected][0]||null;part=partIndex;loadAttributes();paint();
   }
   function dispatchClick(c,id=null,partIndex=0) {
-    if(typeof window!=='undefined'&&window.bikeRacks?.capturesMap)return;
+    if(typeof window!=='undefined'&&(window.bikeRacks?.capturesMap||window.bikeCrossings?.capturesMap))return;
     if(!editing||busy)return;
     if(mode==='draw'||mode==='split') {capture.push(snap(c));captureCursor=c;paint();return;}
     if(mode==='vertex') {
@@ -473,7 +473,7 @@ window.installBikeTools = function(api) {
     finally{busy=false;updateUI();}
   }
   function start(preserveView=false) {
-    if(window.bikeRacks?.active){msg('보관대 편집을 저장하고 종료한 뒤 도로 편집을 켜세요.',true);return;}
+    if(window.bikeRacks?.active||window.bikeCrossings?.active){msg('포인트 편집을 저장하고 종료한 뒤 도로 편집을 켜세요.',true);return;}
     if(!ready||busy)return;editing=true;api.stopOtherTools();api.setEditing(true);panel.hidden=false;
     $('bikeEditorBtn').setAttribute('aria-pressed','true');$('bikeEditorBtn').setAttribute('aria-label','저장 후 편집 끄기');$('bikeEditorBtn').title='저장 후 편집 끄기';setMode('select');fillRoutes();loadAttributes();paint();
     if(!preserveView&&map.getLevel()>6&&dataset.features.length){
