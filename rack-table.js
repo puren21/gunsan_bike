@@ -26,9 +26,9 @@ window.installRackAttributeTable=function(api){
   $('tbody').querySelectorAll('input').forEach(input=>input.readOnly=!editable);$('tbody').querySelectorAll('tr').forEach(row=>row.setAttribute('aria-selected',String(row.dataset.rackId===state.selected)));
  }
  function restore(){if(panel.ownerDocument!==document)document.body.append(panel);panel.hidden=true;popup=null;}
- function open(){if(!api.state().loaded||!api.commit())return;if(popup&&!popup.closed){popup.focus();return;}popup=window.open('','gunsanRackAttributes','popup=yes,width=1080,height=570,resizable=yes,scrollbars=yes');panel.hidden=false;
+ function open(detached=true){if(!api.state().loaded||!api.commit())return;if(popup&&!popup.closed){if(detached){popup.focus();return;}const old=popup;old.removeEventListener('beforeunload',restore);restore();old.close();}popup=detached?window.open('','gunsanRackAttributes','popup=yes,width=1080,height=570,resizable=yes,scrollbars=yes'):null;panel.hidden=false;
   if(popup){const doc=popup.document;doc.head.replaceChildren();doc.title='자전거보관대 속성테이블';doc.documentElement.lang='ko';const link=doc.createElement('link');link.rel='stylesheet';link.href=document.querySelector('link[href*="bike-racks.css"]').href;doc.head.append(link);doc.body.className='rack-table-detached';doc.body.replaceChildren(panel);popup.addEventListener('beforeunload',restore,{once:true});popup.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();doc.activeElement?.blur();api.save();}});popup.focus();}
-  else status('팝업이 차단되어 지도 안에 열었습니다. 팝업 허용 시 별도 창으로 이동할 수 있습니다.');refresh(true);
+  else status(detached?'팝업이 차단되어 지도 안에 열었습니다. 팝업 허용 시 별도 창으로 이동할 수 있습니다.':'');refresh(true);
  }
  function status(text,error=false){$('.rack-table-status').textContent=text;$('.rack-table-status').classList.toggle('error',error);}
  $('[data-edit]').onclick=()=>{const next=!tableEditing;if(api.setEditing(next)){tableEditing=next;refresh();}};
