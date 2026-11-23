@@ -4,6 +4,7 @@
 const URL='https://zdjuksmhtvhetzblczqq.supabase.co', KEY='sb_publishable_Hlk_1ZOd_WF_Ijn6VM258w_3w8HFYN4';
 
 const sessionKey='gunsan_bike:cloud-session-v1';let session=null,revision=0,loaded=false,refreshing=null,loading=null,saving=false,snapshot=null;
+let rackRevision=0,racksLoaded=false,rackSaving=false,rackLoading=null,rackSnapshot=null;
 const listeners=new Set();
 try{session=JSON.parse(localStorage.getItem(sessionKey)||'null');}catch(e){}
 function notify(){listeners.forEach(fn=>fn());}
@@ -60,6 +61,18 @@ const cloud=window.GunsanCloud={
  // Read the authoritative server data on the next visit, including server transformations.
  try{localStorage.removeItem(cacheKey);}catch(e){}notify();return rows[0];
  }finally{saving=false;}
+ },
+ get rackRevision(){return rackRevision;},
+ async loadRacks(){
+  if(racksLoaded)return clone(rackSnapshot);
+  if(!rackLoading)rackLoading=request('/rest/v1/gunsan_bike_rack_datasets?id=eq.gunsan_bike_racks&select=data,revision').then(rows=>{const row=rows?.[0];if(!row||!validRevision(row.revision)||!validData(row.data))throw Error('보관대 저장소를 확인하지 못했습니다.');rackRevision=Number(row.revision);rackSnapshot=clone(row.data);racksLoaded=true;return rackSnapshot;}).finally(()=>rackLoading=null);
+  return clone(await rackLoading);
+ },
+ async saveRacks(data){
+  if(!racksLoaded)throw Error('보관대 저장소를 먼저 불러오세요.');if(rackSaving)throw Error('보관대를 저장 중입니다.');
+  rackSaving=true;try{const access=await token(),expected=rackRevision;const rows=await request('/rest/v1/rpc/save_gunsan_bike_racks?select=revision,updated_at',{method:'POST',token:access,body:{p_data:data,p_revision:expected}});
+   if(!rows?.[0]||!validRevision(rows[0].revision)||Number(rows[0].revision)<=expected)throw Error('보관대 저장 확인을 받지 못했습니다. 새로고침 전에 내보내기로 백업하세요.');rackRevision=Number(rows[0].revision);rackSnapshot=clone(data);return rows[0];
+  }finally{rackSaving=false;}
  },
  async login(email,password){const next=await request('/auth/v1/token?grant_type=password',{method:'POST',body:{email,password}});remember(next);},
  async logout(){const current=session;remember(null);if(current)try{await request('/auth/v1/logout',{method:'POST',token:current.access_token});}catch(e){}},

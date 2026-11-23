@@ -367,6 +367,7 @@ window.installBikeTools = function(api) {
     activeId=selected.has(id)?id:[...selected][0]||null;part=partIndex;loadAttributes();paint();
   }
   function dispatchClick(c,id=null,partIndex=0) {
+    if(typeof window!=='undefined'&&window.bikeRacks?.capturesMap)return;
     if(!editing||busy)return;
     if(mode==='draw'||mode==='split') {capture.push(snap(c));captureCursor=c;paint();return;}
     if(mode==='vertex') {
@@ -472,6 +473,7 @@ window.installBikeTools = function(api) {
     finally{busy=false;updateUI();}
   }
   function start(preserveView=false) {
+    if(window.bikeRacks?.active){msg('보관대 편집을 저장하고 종료한 뒤 도로 편집을 켜세요.',true);return;}
     if(!ready||busy)return;editing=true;api.stopOtherTools();api.setEditing(true);panel.hidden=false;
     $('bikeEditorBtn').setAttribute('aria-pressed','true');$('bikeEditorBtn').setAttribute('aria-label','저장 후 편집 끄기');$('bikeEditorBtn').title='저장 후 편집 끄기';setMode('select');fillRoutes();loadAttributes();paint();
     if(!preserveView&&map.getLevel()>6&&dataset.features.length){

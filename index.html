@@ -10037,9 +10037,12 @@ const gunsanStorage = {
   </script>
   <link rel="stylesheet" href="bike-tools.css?v=20261022-8">
   <script src="bike-geometry.js?v=20261020-27"></script>
-  <script src="cloud-storage.js?v=20261023-cache-v1"></script>
+  <script src="rack-model.js?v=20261123-1"></script>
+  <link rel="stylesheet" href="bike-racks.css?v=20261123-1">
+  <script src="bike-racks.js?v=20261123-1"></script>
+  <script src="cloud-storage.js?v=20261123-1"></script>
   <script src="bike-options.js?v=20261020-34"></script>
-  <script src="bike-tools.js?v=20261023-cache-v1"></script>
+  <script src="bike-tools.js?v=20261123-1"></script>
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ee4bab8cd4d6be6d0d68a49e9b4502b&libraries=services&autoload=false"
     onerror="showAppError('카카오 지도를 불러오지 못했습니다', '인터넷 연결, 카카오 API 사용 설정·쿼터, JavaScript SDK 도메인을 확인해 주세요.')"></script>
 
@@ -25864,6 +25867,13 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
         }
       });
 
+      Promise.all([roadsReadyPromise,townshipBoundaryReadyPromise]).then(function(){
+        window.installBikeRacks({map,storage:gunsanStorage,openMenu:()=>window.openGunsanRoadMenuPage?.('racks'),stopOtherTools:function(){
+          if(roadEditSessionGroupKey)finishRoadEditSession(roadEditSessionGroupKey);closeRoadPopup();closeParcelContextMenu();closeBasePlacePopup();
+          if(roadWidthMeasureMode)stopRoadWidthMeasure(true);if(roadviewMode)roadviewBtn.click();if(measureMode&&typeof clearMeasure==='function')clearMeasure();
+        }});
+      });
+
       function getNumber(properties, layerId) {
         if (layerId === "city") {
           return safe(properties.number);
@@ -26126,6 +26136,7 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
   const roadPage = document.createElement("div");
   roadPage.id = "roadMenuRoadPage";
   roadPage.className = "road-menu-page";
+  const racksPage=document.createElement('div');racksPage.id='roadMenuRacksPage';racksPage.className='road-menu-page';racksPage.innerHTML='<p>보관대를 불러오는 중입니다.</p>';
 
   [searchWrap, kindFilters, resultSummary, listContent].forEach(function(el) {
     roadPage.appendChild(el);
@@ -26172,6 +26183,7 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
       '</span>' +
       '<span class="road-ios-chevron">›</span>' +
     '</button>' +
+    '<button type="button" class="road-ios-menu-row" data-road-page="racks"><span class="road-ios-menu-left"><span class="road-ios-menu-icon" aria-hidden="true" style="background:#087b80;color:white;font:bold 21px sans-serif">P</span><span class="road-ios-menu-text">자전거보관대</span></span><span class="road-ios-chevron">›</span></button>' +
     '<button type="button" class="road-ios-menu-row" data-road-page="style">' +
       '<span class="road-ios-menu-left">' +
         '<span class="road-ios-menu-icon road-ios-style-icon" aria-hidden="true"><img src="data:image/webp;base64,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" alt=""></span>' +
@@ -26215,6 +26227,7 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
   header.insertAdjacentElement("afterend", home);
   home.insertAdjacentElement("afterend", roadPage);
   roadPage.insertAdjacentElement("afterend", stylePage);
+  roadPage.insertAdjacentElement("afterend",racksPage);
   stylePage.insertAdjacentElement("afterend", memoPage);
   memoPage.insertAdjacentElement("afterend", otherPage);
 
@@ -26304,7 +26317,7 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
     expandRoadMenu();
     panel.classList.remove("road-menu-detail");
     home.style.display = "flex";
-    roadPage.classList.remove("active");
+    roadPage.classList.remove("active");racksPage.classList.remove("active");
     stylePage.classList.remove("active");
     memoPage.classList.remove("active");
     otherPage.classList.remove("active");
@@ -26318,12 +26331,12 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
     panel.classList.add("road-menu-detail");
     backBtn.dataset.rootMenu = "0";
     home.style.display = "none";
-    roadPage.classList.toggle("active", name === "roads");
+    roadPage.classList.toggle("active", name === "roads");racksPage.classList.toggle("active",name === "racks");
     stylePage.classList.toggle("active", name === "style");
     memoPage.classList.toggle("active", name === "memos");
     otherPage.classList.toggle("active", name === "other");
     backBtn.style.display = "inline-flex";
-    title.textContent = name === "memos"
+    title.textContent = name === "racks" ? "자전거보관대" : name === "memos"
       ? "메모"
       : name === "style"
         ? "스타일 설정"
@@ -26338,6 +26351,7 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
       }
     }
     if (name === "memos") renderMemoMenu();
+    if (name === "racks") window.bikeRacks?.open();
     if (name === "other" && typeof window.renderSacheonOtherFunctions === "function") {
       window.renderSacheonOtherFunctions(otherPage);
     }
@@ -26354,6 +26368,7 @@ html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#111;font-f
     expandRoadMenu();
   }
 
+  window.openGunsanRoadMenuPage=openPage;
   if (restoreBtn) {
     restoreBtn.addEventListener("click", function(event) {
       event.preventDefault();
